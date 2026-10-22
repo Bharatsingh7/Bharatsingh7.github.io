@@ -1,45 +1,29 @@
 # bharatsingh7.github.io
 
-Portfolio of **Bharat Singh Bhati**. Live: https://bharatsingh7.github.io/
+My portfolio site → **https://bharatsingh7.github.io/**
 
-The page content comes from the resume PDF: name, title, summary, skills, experience, projects, education, awards and certifications.
+I wanted something that felt more like my actual desk than a template, so the top of the page is a little 3D room. There's a robot called ARIA who answers questions about my work, a drone called Bolt who runs errands for her, and a cat who's asleep most of the time. Click things. Most of them do something.
 
-## Updating your resume
+## Why the content comes from a PDF
 
-1. Put your new resume PDF in `resume/`. Any filename works. Delete the old one, or leave it; when there are several, the most recently committed PDF wins.
-2. Commit and push.
+I got tired of updating my resume and then forgetting to update the website. So now the site reads my resume instead. I drop a new PDF in `resume/`, push, and a GitHub Action pulls the text out of it (`tools/parse_resume.py`) and rebuilds the page. Projects, experience, skills, awards and ARIA's answers all come from that one file.
 
-On every push to `main`, GitHub Actions (`.github/workflows/pages.yml`) runs `tools/parse_resume.py`. That writes `data/resume.json`, and the workflow then publishes the site. Within a minute or two the site, ARIA's answers and the CV download links all reflect the new PDF.
+A few things can't come from a resume, like the one-line taglines on project cards. Those live in `data/extras.json`.
 
-To preview locally before pushing:
+If you want to try it locally:
 
 ```sh
 pip install pdfplumber
-python3 tools/parse_resume.py          # prints what it found and warns about missing sections
-python3 -m http.server 8080            # open http://localhost:8080
+python3 tools/parse_resume.py      # tells you what it found in the PDF
+python3 -m http.server 8080        # then open localhost:8080
 ```
 
-The parser understands the usual section headings: Summary/Objective, Skills, Experience, Projects, Education, Achievements/Awards and Certifications. It works with bullets that are text characters as well as bullets drawn as shapes. Any section it can't find is hidden on the site.
+## How it's built
 
-Things a PDF can't say live in `data/extras.json`: the hero tagline, per-project taglines and artwork, and whether to show your phone number (hidden by default).
+Plain HTML, CSS and JavaScript, with three.js for the 3D. There's no framework and no build step, and it's hosted free on GitHub Pages. ARIA doesn't call any AI API. She only knows what's in my resume, and she runs entirely in your browser.
 
-## One-time GitHub setup
+The interesting bits are in `js/3d/`: the room, the robot and her emotes, the drone, and all the desk props.
 
-- The repo must be public, named `Bharatsingh7.github.io`.
-- Go to Settings → Pages → Build and deployment → Source: **GitHub Actions**.
+## Contact
 
-Both Pages and Actions are free for public repos.
-
-## Code map
-
-- `js/content.js`: renders the page from `data/resume.json` and `data/extras.json`
-- `js/aria.js`: ARIA's chat; every answer is built from the resume data
-- `js/main.js`: nav, scroll reveals, and the animated art on the project cards
-- `js/3d/room.js`: the 3D desk scene, choreography, idle behaviour and chat reactions
-- `js/3d/robot.js`: ARIA's body, face expressions and emotes
-- `js/3d/bolt.js`: Bolt, the desk drone
-- `js/3d/props.js`: everything on the desk (cat, duck, cube, robotic arm, laptop and so on)
-- `js/3d/cursor-drone.js`: the drone that follows the mouse
-- `tools/parse_resume.py`: PDF → `data/resume.json`
-
-There's no build step: three.js loads from jsDelivr through an import map.
+bsbharatsingh52@gmail.com · [LinkedIn](https://linkedin.com/in/bharat-bhati1)
