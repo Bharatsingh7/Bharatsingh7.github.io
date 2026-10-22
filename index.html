@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bharat Singh Bhati — On-Device AI & IoT</title>
+  <meta name="description" content="Portfolio of Bharat Singh Bhati — Software Developer building machine vision, IoT and on-device AI systems.">
+  <meta property="og:title" content="Bharat Singh Bhati — On-Device AI & IoT">
+  <meta property="og:description" content="Software Developer | Machine Vision & IoT | On-Device AI">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://bharatsingh7.github.io/">
+  <meta name="theme-color" content="#05060f">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ============ BOOT ============ -->
+<div id="boot" aria-hidden="true">
+  <div class="boot-inner">
+    <pre id="boot-log"></pre>
+    <div class="boot-bar"><span id="boot-fill"></span></div>
+    <p class="boot-skip">click anywhere to skip</p>
+  </div>
+</div>
+
+<canvas id="bg"></canvas>
+<canvas id="drone"></canvas>
+<div class="scanlines"></div>
+<div class="vignette"></div>
+
+<!-- ============ NAV ============ -->
+<header class="nav">
+  <a href="#hero" class="logo"><span class="logo-mark">◢◤</span> BSB<span class="blink">_</span></a>
+  <nav id="nav-links">
+    <a href="#about">About</a>
+    <a href="#skills">Skills</a>
+    <a href="#projects">Projects</a>
+    <a href="#experience">Timeline</a>
+    <a href="#achievements">Awards</a>
+    <a href="#contact">Contact</a>
+  </nav>
+  <a class="btn btn-sm" href="assets/Bharat_Singh_Bhati_Resume.pdf" download>Resume ↓</a>
+  <button class="burger" id="burger" aria-label="Menu"><span></span><span></span><span></span></button>
+</header>
+
+<main>
+<!-- ============ HERO ============ -->
+<section id="hero" class="hero">
+  <div class="hero-text">
+    <p class="tag mono">// SYSTEM.ONLINE — JAIPUR, IN</p>
+    <h1 class="glitch" data-text="BHARAT SINGH BHATI">BHARAT SINGH BHATI</h1>
+    <p class="typer mono">&gt; <span id="typer"></span><span class="caret">█</span></p>
+    <p class="hero-sub">I build machines that see, listen and think — <b>offline</b>. From custom wake-word models to multi-sensor embedded firmware.</p>
+    <div class="hero-cta">
+      <a class="btn btn-glow" href="assets/Bharat_Singh_Bhati_Resume.pdf" download>
+        <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12 3v10.6l3.6-3.6 1.4 1.4-6 6-6-6 1.4-1.4 3.6 3.6V3zM5 19h14v2H5z"/></svg>
+        Download Resume
+      </a>
+      <a class="btn btn-ghost" href="#projects">View Missions</a>
+    </div>
+    <div class="hero-meta mono">
+      <span><i class="dot ok"></i> Available for roles</span>
+      <span>Python · C++ · PyTorch · OpenCV</span>
+    </div>
+  </div>
+
+  <!-- ARIA ROBOT -->
+  <div class="aria-wrap">
+    <div class="aria-stage">
+      <div class="holo-ring r1"></div><div class="holo-ring r2"></div><div class="holo-ring r3"></div>
+      <svg id="aria" viewBox="0 0 300 360" aria-label="ARIA, an AI robot assistant">
+        <defs>
+          <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#2a3358"/><stop offset="1" stop-color="#0d1124"/>
+          </linearGradient>
+          <linearGradient id="visor" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#03050d"/><stop offset="1" stop-color="#0b1430"/>
+          </linearGradient>
+          <radialGradient id="core" cx=".5" cy=".5" r=".5">
+            <stop offset="0" stop-color="#fff"/><stop offset=".35" stop-color="#22f0ff"/><stop offset="1" stop-color="#22f0ff" stop-opacity="0"/>
+          </radialGradient>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <!-- shadow -->
+        <ellipse class="aria-shadow" cx="150" cy="345" rx="70" ry="9" fill="#22f0ff" opacity=".18"/>
+        <g id="aria-body">
+          <!-- arms -->
+          <g id="arm-l" class="arm">
+            <rect x="52" y="208" width="22" height="62" rx="11" fill="url(#metal)" stroke="#3b4a86"/>
+            <circle cx="63" cy="276" r="12" fill="#151b36" stroke="#22f0ff" stroke-opacity=".6"/>
+          </g>
+          <g id="arm-r" class="arm">
+            <rect x="226" y="208" width="22" height="62" rx="11" fill="url(#metal)" stroke="#3b4a86"/>
+            <circle cx="237" cy="276" r="12" fill="#151b36" stroke="#22f0ff" stroke-opacity=".6"/>
+          </g>
+          <!-- torso -->
+          <path d="M80 200 Q150 182 220 200 L208 300 Q150 318 92 300 Z" fill="url(#metal)" stroke="#3b4a86" stroke-width="2"/>
+          <path d="M100 290 Q150 302 200 290" stroke="#22f0ff" stroke-opacity=".35" fill="none"/>
+          <circle cx="150" cy="245" r="24" fill="#070a18" stroke="#3b4a86" stroke-width="2"/>
+          <circle id="aria-core" cx="150" cy="245" r="20" fill="url(#core)"/>
+          <g stroke="#ff2bd6" stroke-width="2" opacity=".8">
+            <line x1="104" y1="222" x2="118" y2="222"/><line x1="104" y1="230" x2="114" y2="230"/>
+            <line x1="182" y1="222" x2="196" y2="222"/><line x1="186" y1="230" x2="196" y2="230"/>
+          </g>
+          <!-- neck -->
+          <rect x="136" y="172" width="28" height="20" rx="4" fill="#151b36" stroke="#3b4a86"/>
+          <!-- head -->
+          <g id="aria-head">
+            <line x1="150" y1="44" x2="150" y2="22" stroke="#3b4a86" stroke-width="4"/>
+            <circle id="antenna" cx="150" cy="18" r="7" fill="#ff2bd6" filter="url(#glow)"/>
+            <rect x="72" y="44" width="156" height="132" rx="44" fill="url(#metal)" stroke="#3b4a86" stroke-width="2"/>
+            <rect x="60" y="92" width="16" height="40" rx="6" fill="#151b36" stroke="#22f0ff" stroke-opacity=".5"/>
+            <rect x="224" y="92" width="16" height="40" rx="6" fill="#151b36" stroke="#22f0ff" stroke-opacity=".5"/>
+            <rect x="88" y="70" width="124" height="80" rx="30" fill="url(#visor)" stroke="#22f0ff" stroke-opacity=".4"/>
+            <g id="eyes" filter="url(#glow)">
+              <g class="eye"><ellipse cx="122" cy="104" rx="13" ry="15" fill="#22f0ff"/><circle class="pupil" cx="122" cy="104" r="5" fill="#eaffff"/></g>
+              <g class="eye"><ellipse cx="178" cy="104" rx="13" ry="15" fill="#22f0ff"/><circle class="pupil" cx="178" cy="104" r="5" fill="#eaffff"/></g>
+            </g>
+            <g id="mouth" filter="url(#glow)">
+              <rect class="mb" x="132" y="130" width="4" height="4" rx="2" fill="#22f0ff"/>
+              <rect class="mb" x="140" y="130" width="4" height="4" rx="2" fill="#22f0ff"/>
+              <rect class="mb" x="148" y="130" width="4" height="4" rx="2" fill="#22f0ff"/>
+              <rect class="mb" x="156" y="130" width="4" height="4" rx="2" fill="#22f0ff"/>
+              <rect class="mb" x="164" y="130" width="4" height="4" rx="2" fill="#22f0ff"/>
+            </g>
+          </g>
+          <!-- hover thruster -->
+          <path id="thrust" d="M128 312 L150 344 L172 312 Z" fill="#22f0ff" opacity=".35" filter="url(#glow)"/>
+        </g>
+      </svg>
+    </div>
+
+    <div class="chat hud">
+      <div class="chat-head mono">
+        <span><i class="dot ok"></i> ARIA v2.6 // personal AI unit</span>
+        <span class="chat-status" id="chat-status">IDLE</span>
+      </div>
+      <div class="chat-log" id="chat-log" aria-live="polite"></div>
+      <div class="chips" id="chips">
+        <button data-q="skills">⚡ Skills</button>
+        <button data-q="projects">🚀 Projects</button>
+        <button data-q="experience">🧪 Experience</button>
+        <button data-q="achievements">🏆 Awards</button>
+        <button data-q="contact">📡 Contact</button>
+        <button data-q="resume">📄 Resume</button>
+      </div>
+      <form class="chat-input" id="chat-form" autocomplete="off">
+        <span class="mono">&gt;</span>
+        <input id="chat-text" type="text" placeholder="Ask ARIA… e.g. “does he know PyTorch?”" maxlength="120">
+        <button type="submit" aria-label="Send">➤</button>
+      </form>
+    </div>
+  </div>
+
+  <a href="#about" class="scroll-hint mono">SCROLL<span></span></a>
+</section>
+
+<!-- ============ MARQUEE ============ -->
+<div class="marquee" aria-hidden="true">
+  <div class="marquee-track mono">
+    <span>PYTHON</span>✦<span>PYTORCH</span>✦<span>OPENCV</span>✦<span>WHISPER</span>✦<span>YOLO</span>✦<span>LLAMA 3.2</span>✦<span>ESP32</span>✦<span>RASPBERRY PI</span>✦<span>MQTT</span>✦<span>DOCKER</span>✦<span>ARCH LINUX</span>✦<span>C++</span>✦
+    <span>PYTHON</span>✦<span>PYTORCH</span>✦<span>OPENCV</span>✦<span>WHISPER</span>✦<span>YOLO</span>✦<span>LLAMA 3.2</span>✦<span>ESP32</span>✦<span>RASPBERRY PI</span>✦<span>MQTT</span>✦<span>DOCKER</span>✦<span>ARCH LINUX</span>✦<span>C++</span>✦
+  </div>
+</div>
+
+<!-- ============ ABOUT ============ -->
+<section id="about" class="section">
+  <div class="section-head reveal">
+    <span class="idx mono">01</span>
+    <h2>Operator <em>Profile</em></h2>
+  </div>
+  <div class="about-grid">
+    <div class="about-card hud reveal">
+      <div class="id-card">
+        <div class="avatar">
+          <svg viewBox="0 0 120 120">
+            <defs><linearGradient id="avg" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#22f0ff"/><stop offset="1" stop-color="#ff2bd6"/></linearGradient></defs>
+            <polygon points="60,4 112,32 112,88 60,116 8,88 8,32" fill="none" stroke="url(#avg)" stroke-width="2"/>
+            <polygon points="60,16 101,38 101,82 60,104 19,82 19,38" fill="#0b1026"/>
+            <text x="60" y="70" text-anchor="middle" font-family="Orbitron" font-weight="900" font-size="30" fill="url(#avg)">BSB</text>
+          </svg>
+        </div>
+        <div>
+          <p class="mono dim">ID // 0x7B5B</p>
+          <h3>Bharat Singh Bhati</h3>
+          <p class="dim">B.Tech CSE · Amity University Rajasthan</p>
+          <p class="mono small">CLASS: <span class="c">SOFTWARE DEV</span> · SPEC: <span class="m">EDGE AI / IoT</span></p>
+        </div>
+      </div>
+      <p>CS graduate with hands-on experience building <b>ML</b> and <b>IoT</b> systems across university projects and a research-lab role — from custom wake-word models trained from scratch to multi-sensor embedded firmware that runs without a host computer.</p>
+      <p>I like systems that work <b>offline, on-device, in real time</b>: voice pipelines, vision, sensor fusion and the Linux boxes that run them.</p>
+    </div>
+    <div class="stats">
+      <div class="stat hud reveal"><b data-count="5">0</b><sup>+</sup><span>IoT prototypes shipped</span></div>
+      <div class="stat hud reveal"><b data-count="12">0</b><sup>+</sup><span>Junior devs mentored</span></div>
+      <div class="stat hud reveal"><b data-count="4">0</b><span>Exhibition demos</span></div>
+      <div class="stat hud reveal"><b data-count="95">0</b><sup>%</sup><span>Wake-word accuracy</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SKILLS ============ -->
+<section id="skills" class="section">
+  <div class="section-head reveal">
+    <span class="idx mono">02</span>
+    <h2>Skill <em>Matrix</em></h2>
+  </div>
+  <div class="skill-tabs mono reveal" id="skill-tabs">
+    <button class="on" data-cat="all">ALL</button>
+    <button data-cat="lang">LANGUAGES</button>
+    <button data-cat="ai">AI &amp; ML</button>
+    <button data-cat="iot">EMBEDDED &amp; IoT</button>
+    <button data-cat="sys">SYSTEMS</button>
+    <button data-cat="web">WEB</button>
+  </div>
+  <div class="hex-grid" id="hex-grid"></div>
+</section>
+
+<!-- ============ PROJECTS ============ -->
+<section id="projects" class="section">
+  <div class="section-head reveal">
+    <span class="idx mono">03</span>
+    <h2>Mission <em>Logs</em></h2>
+  </div>
+  <div class="slider reveal" id="slider">
+    <div class="slides" id="slides">
+
+      <article class="slide" data-art="wave">
+        <div class="slide-art"><canvas></canvas><span class="art-label mono">AUDIO.SPECTRUM // LIVE</span></div>
+        <div class="slide-body">
+          <p class="mono dim">MISSION 01 · ON-DEVICE AI</p>
+          <h3>CyberWolf AI Assistant</h3>
+          <p>A fully offline voice assistant that knows who's talking. Custom wake-word + voice-signature model, local speech-to-text, a local LLM and face recognition — zero cloud.</p>
+          <ul>
+            <li>Trained wake-word &amp; speaker-ID model from scratch in PyTorch — <b>&gt;95%</b> accuracy in quiet conditions</li>
+            <li>faster-whisper STT + Llama 3.2 via LM Studio — <b>sub-second</b> end-to-end latency on edge hardware</li>
+            <li>OpenCV face recognition for multi-factor (voice + face) identity verification</li>
+          </ul>
+          <div class="tags"><span>Python</span><span>PyTorch</span><span>Whisper</span><span>Llama 3.2</span><span>OpenCV</span></div>
+        </div>
+      </article>
+
+      <article class="slide" data-art="orb">
+        <div class="slide-art"><canvas></canvas><span class="art-label mono">SENSOR.MESH // AQI</span></div>
+        <div class="slide-body">
+          <p class="mono dim">MISSION 02 · IoT</p>
+          <h3>LumiSense</h3>
+          <p>Ambient lighting that breathes with the air you breathe. Fuses gas, CO and particulate readings and shifts colour &amp; intensity in real time.</p>
+          <ul>
+            <li>Sensor fusion across gas, CO and PM inputs driving live light colour/intensity</li>
+            <li>MQTT publishing for remote monitoring + local thresholds for instant visual &amp; audible alerts</li>
+            <li>Custom C++ firmware on Arduino — runs fully standalone, no host computer</li>
+          </ul>
+          <div class="tags"><span>Arduino</span><span>C++</span><span>Sensor Fusion</span><span>MQTT</span></div>
+        </div>
+      </article>
+
+      <article class="slide" data-art="radar">
+        <div class="slide-art"><canvas></canvas><span class="art-label mono">NET.SCAN // SWEEP</span></div>
+        <div class="slide-body">
+          <p class="mono dim">MISSION 03 · SECURITY</p>
+          <h3>Network Security Auditor</h3>
+          <p>A Python recon tool that finds live hosts, maps the topology and probes MAC-filtering configurations for access-control weaknesses.</p>
+          <ul>
+            <li>Active device discovery + topology mapping with Netdiscover</li>
+            <li>MAC filtering analysis to surface access-control gaps</li>
+            <li>Automated audits across multiple lab networks — documented <b>3+</b> classes of misconfiguration</li>
+          </ul>
+          <div class="tags"><span>Python</span><span>socket</span><span>subprocess</span><span>Netdiscover</span></div>
+        </div>
+      </article>
+
+      <article class="slide" data-art="arm">
+        <div class="slide-art"><canvas></canvas><span class="art-label mono">SERVO.KINEMATICS</span></div>
+        <div class="slide-body">
+          <p class="mono dim">MISSION 04 · RAIOT LABS</p>
+          <h3>Lab Prototypes</h3>
+          <p>A run of Python IoT builds at RAIOT Labs — including a programmable robotic arm and an air-quality monitor with live feedback and edge deployment on Raspberry Pi.</p>
+          <ul>
+            <li>5+ prototypes from breadboard to working demo</li>
+            <li>Threshold-based alerting and live sensor dashboards on the edge</li>
+            <li>4 prototypes presented at university technical exhibitions</li>
+          </ul>
+          <div class="tags"><span>Raspberry Pi</span><span>Python</span><span>ESP32</span><span>Robotics</span></div>
+        </div>
+      </article>
+
+    </div>
+    <div class="slider-ui">
+      <button class="sbtn" id="prev" aria-label="Previous">◀</button>
+      <div class="dots" id="dots"></div>
+      <button class="sbtn" id="next" aria-label="Next">▶</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ EXPERIENCE ============ -->
+<section id="experience" class="section">
+  <div class="section-head reveal">
+    <span class="idx mono">04</span>
+    <h2>Flight <em>Path</em></h2>
+  </div>
+  <div class="timeline">
+    <div class="tl-item reveal">
+      <span class="tl-node"></span>
+      <div class="hud tl-card">
+        <p class="mono dim">2022 — 2026</p>
+        <h3>Senior Software Developer</h3>
+        <p class="c">RAIOT Labs — Amity University Jaipur</p>
+        <ul>
+          <li>Built 5+ Python-based IoT prototypes — a programmable robotic arm and an air-quality monitor with live sensor feedback, threshold alerting and edge deployment on Raspberry Pi.</li>
+          <li>Took 12+ junior developers from zero to writing and debugging sensor code independently, through one-on-one and group sessions.</li>
+          <li>Presented 4 prototypes at university technical exhibitions, shortlisted by faculty and industry judges for live demos.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="tl-item reveal">
+      <span class="tl-node m"></span>
+      <div class="hud tl-card">
+        <p class="mono dim">2022 — 2026</p>
+        <h3>B.Tech, Computer Science &amp; Engineering</h3>
+        <p class="m">Amity University Rajasthan, Jaipur · CGPA 7.7 / 10</p>
+      </div>
+    </div>
+    <div class="tl-item reveal">
+      <span class="tl-node"></span>
+      <div class="hud tl-card">
+        <p class="mono dim">APR — JUN 2023</p>
+        <h3>Robotron Robotics Course</h3>
+        <p class="c">Tech Analogy (DPIIT-recognised)</p>
+      </div>
+    </div>
+    <div class="tl-item reveal">
+      <span class="tl-node m"></span>
+      <div class="hud tl-card">
+        <p class="mono dim">2024</p>
+        <h3>Prompt Engineering for Developers</h3>
+        <p class="m">DeepLearning.AI (Andrew Ng)</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ACHIEVEMENTS ============ -->
+<section id="achievements" class="section">
+  <div class="section-head reveal">
+    <span class="idx mono">05</span>
+    <h2>Trophy <em>Vault</em></h2>
+  </div>
+  <div class="trophies">
+    <div class="trophy hud reveal tilt gold"><div class="t-icon">🥇</div><h3>1st Place</h3><p>IEEE Hackathon 2024</p></div>
+    <div class="trophy hud reveal tilt silver"><div class="t-icon">🥈</div><h3>2nd Place</h3><p>IEEE Hackathon 2023</p></div>
+    <div class="trophy hud reveal tilt"><div class="t-icon">🎛</div><h3>Lead Organizer</h3><p>Sun Bulls Future Energies Pvt. Ltd Event, Amity Jaipur</p></div>
+    <div class="trophy hud reveal tilt"><div class="t-icon">🚩</div><h3>CTF &amp; TechZibition</h3><p>IIT Roorkee Cognizance 2025</p></div>
+  </div>
+</section>
+
+<!-- ============ CONTACT ============ -->
+<section id="contact" class="section">
+  <div class="section-head reveal">
+    <span class="idx mono">06</span>
+    <h2>Open <em>Channel</em></h2>
+  </div>
+  <div class="contact-grid">
+    <div class="channels">
+      <a class="channel hud reveal" href="mailto:bsbharatsingh52@gmail.com">
+        <span class="ch-ic">✉</span><span><b>EMAIL</b><i>bsbharatsingh52@gmail.com</i></span><span class="ch-go">→</span>
+      </a>
+      <a class="channel hud reveal" href="https://linkedin.com/in/bharat-bhati1" target="_blank" rel="noopener">
+        <span class="ch-ic">in</span><span><b>LINKEDIN</b><i>/in/bharat-bhati1</i></span><span class="ch-go">→</span>
+      </a>
+      <a class="channel hud reveal" href="https://github.com/Bharatsingh7" target="_blank" rel="noopener">
+        <span class="ch-ic">⌥</span><span><b>GITHUB</b><i>@Bharatsingh7</i></span><span class="ch-go">→</span>
+      </a>
+      <a class="channel hud reveal" href="assets/Bharat_Singh_Bhati_Resume.pdf" download>
+        <span class="ch-ic">⇩</span><span><b>RESUME</b><i>PDF · 2 pages</i></span><span class="ch-go">→</span>
+      </a>
+    </div>
+    <form class="hud transmit reveal" id="mail-form">
+      <p class="mono dim">// COMPOSE TRANSMISSION</p>
+      <label>Callsign<input name="name" required placeholder="Your name"></label>
+      <label>Subject<input name="subject" required placeholder="Let's build something"></label>
+      <label>Message<textarea name="msg" rows="4" required placeholder="Type your message…"></textarea></label>
+      <button class="btn btn-glow" type="submit">Transmit ➤</button>
+    </form>
+  </div>
+</section>
+</main>
+
+<footer class="footer mono">
+  <span>© <span id="yr"></span> Bharat Singh Bhati</span>
+  <span>Built with HTML · CSS · JS — no frameworks harmed</span>
+  <a href="#hero">▲ Return to orbit</a>
+</footer>
+
+<script src="js/background.js"></script>
+<script src="js/drone.js"></script>
+<script src="js/robot.js"></script>
+<script src="js/slider.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
