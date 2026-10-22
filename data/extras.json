@@ -1,0 +1,10 @@
+{
+  "_help": "Things a resume PDF can't say. Everything else on the site comes from data/resume.json, which tools/parse_resume.py writes from the PDF in resume/. Project keys match any project whose name contains them (case-insensitive). art: wave | orb | radar | circuit.",
+  "lede": "I build AI and hardware that work offline.",
+  "showPhone": false,
+  "projects": {
+    "cyberwolf": { "tagline": "A voice assistant that knows who is talking, and never touches the cloud.", "art": "wave" },
+    "lumisense": { "tagline": "Room lighting that changes colour with the air you're breathing.", "art": "orb" },
+    "network security": { "tagline": "Finds who is on a network, and where its access control is weak.", "art": "radar" }
+  }
+}

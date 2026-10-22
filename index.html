@@ -13,7 +13,7 @@
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Caveat:wght@600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <script type="importmap">
     {
@@ -29,7 +29,7 @@
 <canvas id="drone" aria-hidden="true"></canvas>
 
 <header class="nav" id="nav">
-  <a href="#top" class="mark" aria-label="Back to top">BSB</a>
+  <a href="#top" class="mark" id="mark" aria-label="Back to top">BSB</a>
   <nav class="links">
     <a href="#projects"><i>01</i>Projects</a>
     <a href="#experience"><i>02</i>Experience</a>
@@ -37,23 +37,24 @@
     <a href="#awards"><i>04</i>Awards</a>
     <a href="#contact"><i>05</i>Contact</a>
   </nav>
-  <a class="pill" href="assets/Bharat_Singh_Bhati_Resume.pdf" download>Download CV</a>
+  <a class="pill cv-link" href="#" download>Download CV</a>
 </header>
 
 <section class="hero" id="top">
   <div class="hero-scene" id="scene">
     <canvas id="room"></canvas>
+    <div class="bubbles" id="bubbles" aria-hidden="true"></div>
     <p class="no-gl">The 3D desk needs WebGL, which this browser has turned off.</p>
   </div>
 
   <div class="hero-col">
     <div class="intro">
-      <p class="eyebrow"><span class="dot"></span>Software developer · Jaipur</p>
-      <h1>Bharat Singh Bhati</h1>
-      <p class="lede">I build AI and hardware that work offline.</p>
-      <p class="sub">Machine vision, IoT and on-device AI. Python and C++, from PyTorch models trained from scratch to Arduino firmware that runs without a host computer.</p>
+      <p class="eyebrow"><span class="dot"></span><span id="h-eyebrow" class="sk sk-line">&nbsp;</span></p>
+      <h1 id="h-name">Bharat Singh Bhati</h1>
+      <p class="lede" id="h-lede">I build AI and hardware that work offline.</p>
+      <p class="sub" id="h-sub"><span class="sk sk-block">&nbsp;</span></p>
       <div class="cta">
-        <a class="btn" href="assets/Bharat_Singh_Bhati_Resume.pdf" download>
+        <a class="btn cv-link" href="#" download>
           <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M11 3h2v10.2l3.6-3.6 1.4 1.4-6 6-6-6 1.4-1.4 3.6 3.6zM5 19h14v2H5z"/></svg>
           Download CV
         </a>
@@ -64,7 +65,7 @@
     <div class="aria card">
       <div class="aria-head">
         <span><span class="dot"></span>ARIA</span>
-        <span class="muted">the robot on the desk · ask it about me</span>
+        <span class="muted">the robot on the desk · ask it anything</span>
       </div>
       <div class="aria-log" id="aria-log" aria-live="polite"></div>
       <div class="chips" id="chips">
@@ -76,7 +77,7 @@
         <button data-q="resume">CV</button>
       </div>
       <form class="aria-input" id="aria-form" autocomplete="off">
-        <input id="aria-text" type="text" maxlength="120" placeholder="Ask anything, e.g. does he know PyTorch?">
+        <input id="aria-text" type="text" maxlength="120" placeholder="Ask anything, e.g. does Bharat know PyTorch?">
         <button type="submit" aria-label="Send">
           <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M3 20.5 21 12 3 3.5v6.6L15 12 3 13.9z"/></svg>
         </button>
@@ -86,152 +87,49 @@
 </section>
 
 <main class="column">
-
-  <!-- PROJECTS -->
   <section id="projects">
     <h2 class="label reveal"><i>01</i>Projects</h2>
-
-    <article class="project reveal">
-      <div class="tab"><span>cyberwolf</span><span class="muted">on-device ai</span></div>
-      <div class="project-body">
-        <h3>CyberWolf AI Assistant</h3>
-        <p class="tagline">A voice assistant that knows who is talking, and never touches the cloud.</p>
-        <div class="art"><canvas data-art="wave"></canvas></div>
-        <div class="readme">
-          <p class="h">## What it does</p>
-          <ul>
-            <li>Wakes only for its owner: a custom wake-word and voice-signature model, trained from scratch in PyTorch, with over 95% wake-word accuracy in quiet rooms.</li>
-            <li>Checks identity twice. OpenCV face recognition adds a second factor on top of the voice match.</li>
-          </ul>
-          <p class="h">## How it's built</p>
-          <ul>
-            <li>faster-whisper transcribes speech locally; Llama 3.2 through LM Studio does the language work.</li>
-            <li>The whole pipeline runs on edge hardware with sub-second end-to-end response.</li>
-          </ul>
-          <p class="deps"><span class="k">"stack"</span>: [<span>"Python"</span>, <span>"PyTorch"</span>, <span>"faster-whisper"</span>, <span>"Llama 3.2"</span>, <span>"OpenCV"</span>]</p>
-        </div>
-      </div>
-    </article>
-
-    <article class="project reveal">
-      <div class="tab"><span>lumisense</span><span class="muted">iot</span></div>
-      <div class="project-body">
-        <h3>LumiSense</h3>
-        <p class="tagline">Room lighting that changes colour with the air you're breathing.</p>
-        <div class="art"><canvas data-art="orb"></canvas></div>
-        <div class="readme">
-          <p class="h">## What it does</p>
-          <ul>
-            <li>Fuses gas, CO and particulate readings and shifts light colour and intensity in real time.</li>
-            <li>Raises an instant visual and audible alert when gas or CO crosses a hazard threshold.</li>
-          </ul>
-          <p class="h">## How it's built</p>
-          <ul>
-            <li>Custom C++ firmware on Arduino. It runs on its own, with no host computer.</li>
-            <li>Publishes readings over MQTT for remote monitoring, while the alert logic stays local.</li>
-          </ul>
-          <p class="deps"><span class="k">"stack"</span>: [<span>"Arduino"</span>, <span>"C++"</span>, <span>"MQTT"</span>, <span>"sensor fusion"</span>]</p>
-        </div>
-      </div>
-    </article>
-
-    <article class="project reveal">
-      <div class="tab"><span>net-auditor</span><span class="muted">security</span></div>
-      <div class="project-body">
-        <h3>Network Security Auditor</h3>
-        <p class="tagline">Finds who is on a network, and where its access control is weak.</p>
-        <div class="art"><canvas data-art="radar"></canvas></div>
-        <div class="readme">
-          <p class="h">## What it does</p>
-          <ul>
-            <li>Discovers active devices and maps the topology with Netdiscover.</li>
-            <li>Tests MAC filtering configurations for access-control weaknesses.</li>
-          </ul>
-          <p class="h">## Results</p>
-          <ul>
-            <li>Ran automated audits across several lab networks and documented 3+ classes of access-control misconfiguration.</li>
-          </ul>
-          <p class="deps"><span class="k">"stack"</span>: [<span>"Python"</span>, <span>"socket"</span>, <span>"subprocess"</span>, <span>"Netdiscover"</span>]</p>
-        </div>
-      </div>
-    </article>
+    <div id="project-list"><div class="sk sk-card"></div></div>
   </section>
 
-  <!-- EXPERIENCE -->
   <section id="experience">
     <div class="label-row reveal">
       <h2 class="label"><i>02</i>Experience</h2>
-      <a class="pill" href="assets/Bharat_Singh_Bhati_Resume.pdf" download>Download CV</a>
+      <a class="pill cv-link" href="#" download>Download CV</a>
     </div>
-
-    <article class="job card reveal">
-      <h3>RAIOT Labs, Amity University Jaipur</h3>
-      <p class="role">Senior Software Developer</p>
-      <p class="when">2022 to 2026</p>
-      <ul class="bars">
-        <li>Built 5+ Python IoT prototypes, including a programmable robotic arm and an air-quality monitor with live feedback, threshold alerts and edge deployment on Raspberry Pi.</li>
-        <li>Took 12+ junior developers from zero to writing and debugging sensor code on their own.</li>
-        <li>Presented 4 prototypes at university technical exhibitions; judges shortlisted them for live demos.</li>
-      </ul>
-    </article>
-
-    <article class="job card reveal">
-      <h3>Amity University Rajasthan, Jaipur</h3>
-      <p class="role">B.Tech, Computer Science and Engineering</p>
-      <p class="when">2022 to 2026 · CGPA 7.7 / 10</p>
-    </article>
+    <div id="exp-list"><div class="sk sk-card short"></div></div>
   </section>
 
-  <!-- SKILLS -->
   <section id="skills">
     <h2 class="label reveal"><i>03</i>Skills</h2>
-    <div class="card skills reveal">
-      <div class="row"><span>Languages</span><p><b>Python</b><b>C++</b><b>Java</b><b>SQL</b></p></div>
-      <div class="row"><span>AI and ML</span><p><b>PyTorch</b><b>OpenCV</b><b>Whisper</b><b>faster-whisper</b><b>YOLO</b><b>Ollama</b><b>NumPy</b><b>Pandas</b></p></div>
-      <div class="row"><span>Embedded and IoT</span><p><b>Raspberry Pi</b><b>Arduino</b><b>ESP32</b><b>MQTT</b><b>Sensor fusion</b><b>Edge computing</b></p></div>
-      <div class="row"><span>Systems</span><p><b>Linux (Arch, Debian)</b><b>Docker</b><b>Git</b><b>Bash</b><b>CI/CD</b></p></div>
-      <div class="row"><span>Web and CS</span><p><b>Flask</b><b>REST APIs</b><b>OOP</b><b>DSA</b><b>DBMS</b></p></div>
-    </div>
+    <div class="card skills reveal" id="skill-list"><div class="sk sk-block"></div></div>
   </section>
 
-  <!-- AWARDS -->
   <section id="awards">
     <h2 class="label reveal"><i>04</i>Awards</h2>
-    <div class="awards">
-      <div class="card award reveal"><span class="when">2024</span><h3>1st place</h3><p>IEEE Hackathon</p></div>
-      <div class="card award reveal"><span class="when">2023</span><h3>2nd place</h3><p>IEEE Hackathon</p></div>
-      <div class="card award reveal"><span class="when">2025</span><h3>CTF and TechZibition</h3><p>IIT Roorkee Cognizance</p></div>
-      <div class="card award reveal"><span class="when">Event</span><h3>Lead organizer</h3><p>Sun Bulls Future Energies, Amity University Jaipur</p></div>
-    </div>
-    <div class="card certs reveal">
-      <p class="when">Certifications</p>
-      <p>Prompt Engineering for Developers <span class="muted">· DeepLearning.AI, 2024</span></p>
-      <p>Robotron Robotics Course <span class="muted">· Tech Analogy, Apr to Jun 2023</span></p>
-    </div>
+    <div class="awards" id="award-list"></div>
+    <div class="card certs reveal" id="cert-list" hidden></div>
   </section>
 
-  <!-- CONTACT -->
   <section id="contact">
     <h2 class="label reveal"><i>05</i>Contact</h2>
     <div class="card contact reveal">
       <h3>Building something that has to run offline, or on a board?</h3>
-      <p class="muted">I'm open to software, ML and IoT roles. Email is the fastest way to reach me.</p>
-      <a class="btn" href="mailto:bsbharatsingh52@gmail.com">bsbharatsingh52@gmail.com</a>
-      <div class="links-row">
-        <a href="https://github.com/Bharatsingh7" target="_blank" rel="noopener">GitHub ↗</a>
-        <a href="https://linkedin.com/in/bharat-bhati1" target="_blank" rel="noopener">LinkedIn ↗</a>
-        <a href="assets/Bharat_Singh_Bhati_Resume.pdf" download>CV (PDF) ↓</a>
-      </div>
+      <p class="muted" id="contact-sub">Email is the fastest way to reach me.</p>
+      <a class="btn" id="contact-email" href="#"></a>
+      <div class="links-row" id="contact-links"></div>
     </div>
   </section>
 </main>
 
 <footer class="footer">
-  <span>© <span id="yr"></span> Bharat Singh Bhati</span>
-  <span class="muted">Hand-built with three.js. No templates.</span>
+  <span>© <span id="yr"></span> <span id="f-name">Bharat Singh Bhati</span></span>
+  <span class="muted" id="f-updated">Hand-built with three.js. No templates.</span>
 </footer>
 
+<script src="js/content.js" defer></script>
+<script src="js/aria.js" defer></script>
 <script src="js/main.js" defer></script>
-<script type="module" src="js/scene.js"></script>
+<script type="module" src="js/3d/room.js"></script>
 </body>
 </html>

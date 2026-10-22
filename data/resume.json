@@ -1,0 +1,178 @@
+{
+  "source": "resume/Bharat_Singh_Bhati_Resume.pdf",
+  "generated": "2026-10-22T07:15:23+00:00",
+  "name": "Bharat Singh Bhati",
+  "titleParts": [
+    "Software Developer",
+    "Machine Vision",
+    "IoT",
+    "On-Device AI"
+  ],
+  "title": "Software Developer · Machine Vision · IoT · On-Device AI",
+  "email": "bsbharatsingh52@gmail.com",
+  "phone": "+91-8209326460",
+  "linkedin": "linkedin.com/in/bharat-bhati1",
+  "github": "github.com/Bharatsingh7",
+  "location": "Jaipur, India",
+  "website": "",
+  "summary": "Computer Science Engineering graduate with hands-on experience building AI, Machine Vision and IoT systems. Experienced in Python, C++, PyTorch, OpenCV, Whisper, YOLO, embedded systems, Linux and Docker. Built fully offline AI assistants, embedded IoT solutions and computer vision applications with a strong focus on edge computing and real-world deployment.",
+  "skills": [
+    {
+      "label": "Languages",
+      "items": [
+        "Python",
+        "C++",
+        "Java",
+        "SQL"
+      ]
+    },
+    {
+      "label": "AI & Machine Learning",
+      "items": [
+        "PyTorch",
+        "OpenCV",
+        "YOLO",
+        "Faster-Whisper",
+        "NumPy",
+        "Pandas",
+        "Ollama"
+      ]
+    },
+    {
+      "label": "Embedded & IoT",
+      "items": [
+        "ESP32",
+        "Arduino",
+        "Raspberry Pi",
+        "MQTT",
+        "Sensor Fusion",
+        "Edge Computing"
+      ]
+    },
+    {
+      "label": "Systems",
+      "items": [
+        "Linux (Arch, Debian)",
+        "Docker",
+        "Git",
+        "Bash",
+        "VS Code"
+      ]
+    },
+    {
+      "label": "Concepts",
+      "items": [
+        "REST APIs",
+        "Flask",
+        "OOP",
+        "DSA",
+        "DBMS"
+      ]
+    }
+  ],
+  "experience": [
+    {
+      "title": "IoT Developer",
+      "subtitle": "RAIOT Labs, Amity University Jaipur",
+      "dates": "2022–2026",
+      "bullets": [
+        "Built five Python-based IoT prototypes including a robotic arm and air-quality monitoring system deployed on Raspberry Pi.",
+        "Mentored more than twelve junior developers in Python, embedded systems and sensor programming.",
+        "Presented four working prototypes during university technical exhibitions."
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "CyberWolf AI Assistant",
+      "stack": [
+        "Faster-Whisper",
+        "PyTorch",
+        "OpenCV",
+        "Llama"
+      ],
+      "dates": "",
+      "bullets": [
+        "Developed an offline AI assistant using PyTorch, Faster-Whisper, Llama 3.2 and OpenCV.",
+        "Trained a custom wake-word model achieving over 95% accuracy in quiet environments.",
+        "Implemented local speech recognition, LLM inference and face recognition for complete offline authentication."
+      ]
+    },
+    {
+      "name": "LumiSense",
+      "stack": [
+        "Arduino",
+        "MQTT",
+        "C++"
+      ],
+      "dates": "",
+      "bullets": [
+        "Designed an IoT-based smart ambient lighting system using Arduino and C++.",
+        "Integrated gas, CO and particulate sensors with MQTT communication.",
+        "Implemented real-time monitoring with automated alerts."
+      ]
+    },
+    {
+      "name": "Network Security Auditor Tool",
+      "stack": [
+        "Netdiscover",
+        "Python",
+        "socket"
+      ],
+      "dates": "",
+      "bullets": [
+        "Developed a Python-based network scanner using Netdiscover and socket programming.",
+        "Automated topology mapping and MAC filtering analysis across lab environments."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "degree": "B.Tech. Computer Science and Engineering",
+      "school": "Amity University Rajasthan, Jaipur",
+      "score": "CGPA: 7.9/10",
+      "dates": "2022–2026"
+    }
+  ],
+  "awards": [
+    {
+      "title": "1st Place",
+      "org": "IEEE Hackathon 2024",
+      "year": "2024",
+      "text": "1st Place – IEEE Hackathon 2024"
+    },
+    {
+      "title": "2nd Place",
+      "org": "IEEE Hackathon 2023",
+      "year": "2023",
+      "text": "2nd Place – IEEE Hackathon 2023"
+    },
+    {
+      "title": "Lead Organizer",
+      "org": "Sun Bulls Future Energies Pvt. Ltd Event",
+      "year": "",
+      "text": "Lead Organizer – Sun Bulls Future Energies Pvt. Ltd Event"
+    },
+    {
+      "title": "Participant",
+      "org": "IIT Roorkee Cognizance 2025",
+      "year": "2025",
+      "text": "Participant – IIT Roorkee Cognizance 2025"
+    }
+  ],
+  "certifications": [
+    {
+      "title": "Prompt Engineering for Developers",
+      "org": "DeepLearning.AI (Andrew Ng)",
+      "year": "",
+      "text": "Prompt Engineering for Developers – DeepLearning.AI (Andrew Ng)"
+    },
+    {
+      "title": "Robotron Robotics Course",
+      "org": "Tech Analogy (DPIIT Recognised)",
+      "year": "",
+      "text": "Robotron Robotics Course – Tech Analogy (DPIIT Recognised)"
+    }
+  ],
+  "warnings": []
+}
