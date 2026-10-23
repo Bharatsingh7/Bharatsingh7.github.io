@@ -57,7 +57,7 @@ function initRoom() {
   document.documentElement.dataset.quality = quality.tier;
   const renderer = makeRenderer(canvas, false);
   renderer.shadowMap.enabled = q.shadows;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;   // the soft variant costs ~4x per pixel
   renderer.shadowMap.autoUpdate = false;   // refreshed every few frames instead, see step()
   renderer.localClippingEnabled = true;    // the 3D printer reveals its print with a clipping plane
 
@@ -114,6 +114,8 @@ function initRoom() {
     // soft contact shadows stand in for real ones on the low tier
     if (shadow && !q.shadows) { const b = blobShadow(...shadow); b.position.set(x, y + .002, z); b.rotation.z = -ry; scene.add(b); }
     bake(prop.group);   // merge the parts that never move (moving parts are flagged userData.live)
+    // tiny parts don't need to cast shadows; fewer casters makes the shadow pass cheaper
+    prop.group.traverse(o => { if (o.isMesh && o.castShadow) { o.geometry.computeBoundingSphere(); if (o.geometry.boundingSphere.radius < .03) o.castShadow = false; } });
     return prop;
   }
 
@@ -550,6 +552,7 @@ function initRoom() {
   }
 
   const dayBg = new THREE.Color();
+  let idleOn = true;
   function step(dt, now) {
     t += dt; frame++;
     U.uTime.value = t;
@@ -598,10 +601,13 @@ function initRoom() {
     const every = quality.s.shadowEvery;
     if (every && frame % every === 0) renderer.shadowMap.needsUpdate = true;
   }
-  requestAnimationFrame(tick);
+  // compile every shader before the first frame (in parallel where the browser supports it),
+  // so the room doesn't hitch for the first few seconds; the canvas fades in once it's ready
+  resize();
+  step(0, performance.now());
+  renderer.compileAsync(scene, camera).catch(() => {}).finally(() => { last = performance.now(); requestAnimationFrame(tick); });
 
   // debug/testing: advance the simulation without waiting for frames (handy where WebGL is slow)
-  let idleOn = true;
   Object.assign(window.ARIA3D, {
     advance(sec) { for (let i = 0; i < sec * 30; i++) step(1 / 30, performance.now()); renderer.shadowMap.needsUpdate = true; renderer.render(scene, camera); bubbles.update(); },
     idle(on) { idleOn = on; },
