@@ -41,13 +41,13 @@ if (!hasWebGL()) {
   document.getElementById('drone').remove();
 } else {
   // build the room after the page has loaded and painted, so the text shows up straight away
-  const idle = fn => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 1200 }) : setTimeout(fn, 200));
-  const start = () => idle(() => {
+  // (module scripts run after the HTML is parsed; a short idle wait lets the text paint first)
+  const idle = fn => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 600 }) : setTimeout(fn, 100));
+  idle(() => {
     initRoom();
     if (finePointer && !reduce) initCursorDrone(document.getElementById('drone'), pointer, makeRenderer);
     else document.getElementById('drone').remove();
   });
-  if (document.readyState === 'complete') start(); else addEventListener('load', start, { once: true });
 }
 
 function initRoom() {

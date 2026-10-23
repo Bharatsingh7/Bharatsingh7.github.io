@@ -15,8 +15,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Caveat:wght@600&family=Yellowtail&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
-  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js" crossorigin>
-  <link rel="modulepreload" href="js/3d/room.js">
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <script type="importmap">
     {
@@ -26,6 +24,8 @@
       }
     }
   </script>
+  <!-- preloads must come after the import map, or browsers ignore the map -->
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js" crossorigin>
 </head>
 <body>
 
