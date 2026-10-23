@@ -51,7 +51,7 @@
           d.linkedin && `<a href="${esc(url(d.linkedin))}" target="_blank" rel="noopener">LinkedIn</a>`,
           d.github && `<a href="${esc(url(d.github))}" target="_blank" rel="noopener">GitHub</a>`].filter(Boolean).join(' · '),
       },
-      resume: { topic: 'resume', text: 'Bolt is fetching it. Fresh from the printer.', html: `<a href="${esc(d.source)}" download>Download the CV (PDF)</a>` },
+      resume: { topic: 'resume', text: 'Bolt is fetching it. Fresh from the printer.', html: `<a href="${esc(d.source)}" download>Download my resume (PDF)</a>` },
       hire: {
         topic: 'hire',
         text: `${d.summary ? d.summary.split(/(?<=\.)\s/)[0] : `${first} builds things that work.`} Open to roles, and email is the fastest way to reach ${first}.`,

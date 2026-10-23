@@ -1,7 +1,8 @@
 // Everything on (and above) the desk. Each builder returns { group, update?(t, dt), onClick?() }.
 // Builders work in desk-surface coordinates: y = 0 is the top of the desk.
 import * as THREE from 'three';
-import { C, mat, glow, mesh, rbox, rod, tube, canvasTexture, ease, rand, pick } from './helpers.js';
+import { C, mat, glow, mesh, rbox, rod, tube, canvasTexture, rgbAt, bake, ease, rand, pick } from './helpers.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const TAU = Math.PI * 2;
 const HAND = '600 34px Caveat, "Comic Sans MS", cursive';
@@ -97,21 +98,29 @@ export function buildMonitor() {
   };
 }
 
-// ---------------------------------------------------------------- keyboard + mouse
+// ---------------------------------------------------------------- keyboard + mouse, with per-key RGB
 export function buildKeyboard() {
   const group = new THREE.Group();
   const kb = rbox(.5, .02, .16, .008, mat(0x23262f, .5, .2)); kb.position.y = .01; group.add(kb);
-  const keys = new THREE.InstancedMesh(new THREE.BoxGeometry(.026, .012, .026), mat(0x353a48, .55), 56);
+  const keys = new THREE.InstancedMesh(new THREE.BoxGeometry(.026, .012, .026), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .5 }), 56);
   keys.castShadow = true;
-  const m4 = new THREE.Matrix4(), col = new THREE.Color();
+  const m4 = new THREE.Matrix4(), col = new THREE.Color(), base = new THREE.Color(0x2b2f3a);
   for (let r = 0, i = 0; r < 4; r++) for (let c = 0; c < 14; c++, i++) {
     m4.setPosition(-.218 + c * .0335, .026, -.05 + r * .034);
     keys.setMatrixAt(i, m4);
-    keys.setColorAt(i, col.setHex((r === 0 && c === 0) || (r === 2 && c === 13) ? C.accent : 0x353a48));
+    keys.setColorAt(i, base);
   }
   group.add(keys);
   const mouse = rbox(.06, .025, .1, .012, mat(0x23262f, .45, .2)); mouse.position.set(.36, .012, .02); group.add(mouse);
-  return { group };
+  let frame = 0;
+  return {
+    group,
+    update() {
+      if (frame++ % 2) return;
+      for (let r = 0, i = 0; r < 4; r++) for (let c = 0; c < 14; c++, i++) keys.setColorAt(i, col.copy(base).lerp(rgbAt(c / 14 * .6 + r * .05), .7));
+      keys.instanceColor.needsUpdate = true;
+    },
+  };
 }
 
 // ---------------------------------------------------------------- mug with a label and steam
@@ -146,52 +155,11 @@ export function buildMug() {
   };
 }
 
-// ---------------------------------------------------------------- plant
-export function buildPlant() {
-  const group = new THREE.Group();
-  const pot = mesh(new THREE.CylinderGeometry(.08, .062, .15, 32), mat(0xc2734f, .7)); pot.position.y = .075; group.add(pot);
-  const soil = mesh(new THREE.CircleGeometry(.075, 24), mat(0x2b1d17, 1)); soil.rotation.x = -Math.PI / 2; soil.position.y = .145; group.add(soil);
-  const leafMat = mat(0x4f8a5b, .55, 0, { side: THREE.DoubleSide });
-  const leaves = [];
-  for (let i = 0; i < 11; i++) {
-    const leaf = mesh(new THREE.SphereGeometry(.05, 16, 12), leafMat);
-    leaf.scale.set(.42, 1.7 + (i % 3) * .2, .16);
-    const piv = new THREE.Group();
-    piv.position.y = .14;
-    piv.rotation.set(.3 + (i % 3) * .16, i * 2.4, 0);
-    leaf.position.y = .075;
-    piv.add(leaf); group.add(piv); leaves.push(piv);
-  }
-  return { group, update: t => leaves.forEach((l, i) => { l.rotation.z = Math.sin(t * .8 + i) * .04; }) };
-}
-
-// ---------------------------------------------------------------- desk lamp (returns its spotlight too)
-export function buildLamp() {
-  const group = new THREE.Group();
-  const lampMat = mat(0xe7e2d8, .45, .1);
-  const B = new THREE.Vector3(0, 0, 0), J1 = new THREE.Vector3(-.02, .44, -.05), J2 = new THREE.Vector3(-.16, .52, .2);
-  const lb = mesh(new THREE.CylinderGeometry(.07, .08, .02, 32), lampMat); lb.position.y = .01; group.add(lb);
-  group.add(rod(B, J1, .009, lampMat), rod(J1, J2, .009, lampMat));
-  const joint = mesh(new THREE.SphereGeometry(.017, 16, 12), mat(C.steel, .4, .6)); joint.position.copy(J1); group.add(joint);
-  const shade = mesh(new THREE.ConeGeometry(.08, .12, 32, 1, true), new THREE.MeshStandardMaterial({ color: 0xe7e2d8, roughness: .45, side: THREE.DoubleSide }));
-  shade.position.copy(J2).add(new THREE.Vector3(0, -.045, .01)); shade.rotation.x = .25; group.add(shade);
-  const bulb = mesh(new THREE.SphereGeometry(.028, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffe2bf }), false);
-  bulb.position.copy(shade.position).add(new THREE.Vector3(0, -.045, .012)); group.add(bulb);
-  const light = new THREE.SpotLight(0xffc896, 5, 3.2, .95, .6, 1.6);
-  light.position.copy(bulb.position);
-  light.castShadow = true;
-  light.shadow.mapSize.set(1024, 1024);
-  light.shadow.bias = -.0005;
-  group.add(light, light.target);
-  light.target.position.set(-.45, 0, .45);
-  return { group, light };
-}
-
 // ---------------------------------------------------------------- rubber debugging duck
 export function buildDuck(fx) {
   const group = new THREE.Group();
   const yellow = mat(0xffd84a, .35);
-  const inner = new THREE.Group(); group.add(inner);
+  const inner = new THREE.Group(); inner.userData.live = true; group.add(inner);
   const body = mesh(new THREE.SphereGeometry(.045, 24, 18), yellow); body.scale.set(1, .78, 1.2); body.position.y = .035; inner.add(body);
   const tail = mesh(new THREE.ConeGeometry(.02, .04, 12), yellow); tail.position.set(0, .05, -.055); tail.rotation.x = -1.1; inner.add(tail);
   const head = mesh(new THREE.SphereGeometry(.03, 20, 16), yellow); head.position.set(0, .085, .03); inner.add(head);
@@ -218,12 +186,12 @@ export function buildDuck(fx) {
 export function buildCat(fx) {
   const group = new THREE.Group();
   const fur = mat(0xe39b5a, .8), cream = mat(0xf3dcc0, .85), dark = mat(0x2a1a14, .6);
-  const body = mesh(new THREE.SphereGeometry(.1, 28, 20), fur); body.scale.set(1.35, .62, 1.05); body.position.y = .055; group.add(body);
+  const body = mesh(new THREE.SphereGeometry(.1, 28, 20), fur); body.scale.set(1.35, .62, 1.05); body.position.y = .055; body.userData.live = true; group.add(body);
   for (let i = 0; i < 3; i++) {
     const stripe = mesh(new THREE.TorusGeometry(.095, .006, 6, 24, 1.2), mat(0xc77a3e, .8), false);
     stripe.rotation.set(Math.PI / 2, 0, -.6 + i * .5); stripe.scale.set(1.36, 1.05, .6); stripe.position.y = .085; group.add(stripe);
   }
-  const headPivot = new THREE.Group(); headPivot.position.set(.1, .05, .06); group.add(headPivot);
+  const headPivot = new THREE.Group(); headPivot.position.set(.1, .05, .06); headPivot.userData.live = true; group.add(headPivot);
   const head = mesh(new THREE.SphereGeometry(.055, 24, 18), fur); head.scale.set(1, .88, .95); head.position.set(.03, .015, .02); headPivot.add(head);
   const muzzle = mesh(new THREE.SphereGeometry(.025, 16, 12), cream); muzzle.scale.set(1, .7, .8); muzzle.position.set(.06, .0, .05); headPivot.add(muzzle);
   const nose = mesh(new THREE.SphereGeometry(.006, 8, 6), mat(0xe87a8a, .5), false); nose.position.set(.074, .01, .068); headPivot.add(nose);
@@ -237,11 +205,14 @@ export function buildCat(fx) {
     e.position.set(.05 + s * .022, .028, .055 - s * .005); e.scale.y = .2;
     headPivot.add(e); return e;
   });
-  // tail as a chain of beads so it can swish
-  const beads = Array.from({ length: 9 }, (_, i) => {
-    const b = mesh(new THREE.SphereGeometry(.018 - i * .0008, 12, 10), i > 6 ? cream : fur);
-    group.add(b); return b;
-  });
+  // tail as a chain of beads so it can swish (one instanced mesh, cream tip)
+  const N = 9, beads = new THREE.InstancedMesh(new THREE.SphereGeometry(.018, 12, 10), mat(0xffffff, .8), N);
+  beads.castShadow = true; beads.userData.live = true;
+  const furCol = new THREE.Color(0xe39b5a), creamCol = new THREE.Color(0xf3dcc0);
+  for (let i = 0; i < N; i++) beads.setColorAt(i, i > 6 ? creamCol : furCol);
+  beads.frustumCulled = false;
+  group.add(beads);
+  const bm = new THREE.Matrix4(), bq = new THREE.Quaternion(), bs = new THREE.Vector3(), bp = new THREE.Vector3();
   const paws = [-1, 1].map(s => { const p = mesh(new THREE.SphereGeometry(.02, 12, 10), cream); p.scale.set(1.3, .7, 1); p.position.set(.11 + s * .01, .015, .1 + s * .03); group.add(p); return p; });
 
   const st = { awake: 0, awakeAt: -10, nextZ: 3, twitch: -10, t: 0 };
@@ -263,11 +234,13 @@ export function buildCat(fx) {
       const tw = t - st.twitch;
       ears.forEach((e, i) => { e.rotation.x = (tw < .3 || (Math.sin(t * .7 + i * 3) > .995)) ? Math.sin(t * 40) * .3 : 0; });
       // tail curls around the body and swishes at the tip
-      beads.forEach((b, i) => {
-        const u = i / (beads.length - 1);
+      for (let i = 0; i < N; i++) {
+        const u = i / (N - 1);
         const a = Math.PI * .95 + u * 2.2 + (u * u) * Math.sin(t * (awake ? 4 : 1.2)) * (awake ? .6 : .25);
-        b.position.set(Math.cos(a) * .13 * (1 - u * .1), .02 + u * .015, Math.sin(a) * .1 + .01);
-      });
+        bp.set(Math.cos(a) * .13 * (1 - u * .1), .02 + u * .015, Math.sin(a) * .1 + .01);
+        beads.setMatrixAt(i, bm.compose(bp, bq, bs.setScalar(1 - i * .045)));
+      }
+      beads.instanceMatrix.needsUpdate = true;
       if (!awake && t > st.nextZ) { st.nextZ = t + rand(4, 7); fx.say(headPivot, 'z', { emoji: true, dur: 1800, offset: [0, .1, 0] }); }
     },
     onClick() { api.wake(pick(['Meow?', 'Mrrp.', '...five more minutes.', 'Purr.'])); },
@@ -279,19 +252,38 @@ export function buildCat(fx) {
 export function buildCube(fx) {
   const group = new THREE.Group();
   const s = .018, gap = .0012;
-  const faceMats = [0xd8343a, 0xff8a1f, 0xf4f4f4, 0xffd23f, 0x2fa84f, 0x2a64d8].map(c => mat(c, .35));
-  const black = mat(0x111216, .5);
-  const geo = new THREE.BoxGeometry(s, s, s);
-  const holder = new THREE.Group(); holder.position.y = s * 1.5 + gap; group.add(holder);
+  // one material with vertex colours per face, so the 27 cubies cost 27 draw calls rather than 162
+  const faces = [0xd8343a, 0xff8a1f, 0xf4f4f4, 0xffd23f, 0x2fa84f, 0x2a64d8].map(c => new THREE.Color(c));
+  const black = new THREE.Color(0x111216);
+  const cubeMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .35 });
+  const cubie = (x, y, z) => {
+    const g = new THREE.BoxGeometry(s, s, s);
+    const on = [x === 1, x === -1, y === 1, y === -1, z === 1, z === -1];
+    const cols = new Float32Array(24 * 3);
+    for (let f = 0; f < 6; f++) for (let v = 0; v < 4; v++) (on[f] ? faces[f] : black).toArray(cols, (f * 4 + v) * 3);
+    g.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+    return g;
+  };
+  const holder = new THREE.Group(); holder.position.y = s * 1.5 + gap; holder.userData.live = true; group.add(holder);
   const cubies = [];
   for (let x = -1; x <= 1; x++) for (let y = -1; y <= 1; y++) for (let z = -1; z <= 1; z++) {
-    const m = mesh(geo, [x === 1 ? faceMats[0] : black, x === -1 ? faceMats[1] : black, y === 1 ? faceMats[2] : black,
-      y === -1 ? faceMats[3] : black, z === 1 ? faceMats[4] : black, z === -1 ? faceMats[5] : black]);
+    const m = mesh(cubie(x, y, z), cubeMat);
     m.position.set(x * (s + gap), y * (s + gap), z * (s + gap));
     holder.add(m); cubies.push(m);
   }
   const pivot = new THREE.Group(); holder.add(pivot);
   let turn = null;
+  // while nobody is twisting it, draw the cube as one merged mesh (1 draw call instead of 27)
+  let solid = null;
+  function freeze() {
+    holder.updateMatrixWorld(true);
+    const inv = holder.matrixWorld.clone().invert();
+    solid = mesh(mergeGeometries(cubies.map(c => c.geometry.clone().applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, c.matrixWorld)))), cubeMat);
+    holder.add(solid);
+    cubies.forEach(c => { c.visible = false; });
+  }
+  function thaw() { if (!solid) return; solid.removeFromParent(); solid.geometry.dispose(); solid = null; cubies.forEach(c => { c.visible = true; }); }
+  freeze();
   const quips = ['Solved it. Probably.', 'R U R′ U′', 'One more twist…'];
   return {
     group,
@@ -309,10 +301,12 @@ export function buildCube(fx) {
         });
         pivot.rotation.set(0, 0, 0);
         turn = null;
+        freeze();
       }
     },
     onClick() {
       if (turn) return;
+      thaw();
       const axis = pick(['x', 'y', 'z']), layer = pick([-1, 0, 1]), dir = pick([-1, 1]);
       const list = cubies.filter(c => Math.round(c.position[axis] / (s + gap)) === layer);
       list.forEach(c => pivot.attach(c));
@@ -358,13 +352,15 @@ export function buildCans() {
     ctx.fillText('BYTE', w * .25, 78); ctx.fillText('BYTE', w * .75, 78);
   });
   const side = new THREE.MeshStandardMaterial({ map: label, roughness: .35, metalness: .3 });
-  const top = mat(0xc7cad3, .25, .9);
-  const geo = new THREE.CylinderGeometry(.022, .022, .08, 28);
-  [[-1, 0], [0, 0], [1, 0], [-.5, 1], [.5, 1], [0, 2]].forEach(([x, row], i) => {
-    const c = mesh(geo, [side, top, top]);
-    c.position.set(x * .046, .04 + row * .081, 0); c.rotation.y = i * 1.3;
-    group.add(c);
+  const spots = [[-1, 0], [0, 0], [1, 0], [-.5, 1], [.5, 1], [0, 2]];
+  // all six cans share one label mesh and one caps mesh
+  const body = [], caps = [];
+  spots.forEach(([x, row], i) => {
+    const m = new THREE.Matrix4().compose(new THREE.Vector3(x * .046, .04 + row * .081, 0), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), i * 1.3), new THREE.Vector3(1, 1, 1));
+    body.push(new THREE.CylinderGeometry(.022, .022, .08, 28, 1, true).applyMatrix4(m));
+    [.04, -.04].forEach(y => caps.push(new THREE.CircleGeometry(.022, 20).rotateX(y > 0 ? -Math.PI / 2 : Math.PI / 2).translate(0, y, 0).applyMatrix4(m)));
   });
+  group.add(mesh(mergeGeometries(body), side), mesh(mergeGeometries(caps), mat(0xc7cad3, .25, .9)));
   return { group };
 }
 
@@ -373,7 +369,7 @@ export function buildArm() {
   const group = new THREE.Group();
   const orange = mat(C.accent, .4, .1), dark = mat(C.dark, .4, .4), steel = mat(0xb9bcc6, .3, .8);
   const base = mesh(new THREE.CylinderGeometry(.045, .055, .03, 32), dark); base.position.y = .015; group.add(base);
-  const turret = new THREE.Group(); turret.position.y = .03; group.add(turret);
+  const turret = new THREE.Group(); turret.position.y = .03; turret.userData.live = true; group.add(turret);
   turret.add(mesh(new THREE.CylinderGeometry(.03, .035, .03, 24), orange));
   const L1 = .12, L2 = .1, SH = .03;
   const shoulder = new THREE.Group(); shoulder.position.y = SH; turret.add(shoulder);
@@ -386,7 +382,7 @@ export function buildArm() {
   wrist.add(mesh(new THREE.BoxGeometry(.012, .01, .034), dark));
   const tip = new THREE.Object3D(); tip.position.x = -.042; wrist.add(tip);
 
-  const block = rbox(.024, .024, .024, .004, mat(C.mint, .4)); group.add(block);
+  const block = rbox(.024, .024, .024, .004, mat(C.mint, .4)); block.userData.live = true; group.add(block);
   // stations in the arm's own frame: yaw (radians) and reach
   const spots = [{ yaw: .7, r: .15 }, { yaw: -.9, r: .14 }];
   const spotPos = s => new THREE.Vector3(Math.cos(s.yaw) * s.r, .012, -Math.sin(s.yaw) * s.r);
@@ -473,7 +469,7 @@ export function buildPi() {
   for (let i = 0; i < 3; i++) { const p = rbox(.016, .014, .014, .002, mat(0xb8bcc8, .25, .9)); p.position.set(.052, .012, -.02 + i * .02); group.add(p); }
   const fanG = new THREE.Group(); fanG.position.set(-.01, .034, 0); group.add(fanG);
   fanG.add(mesh(new THREE.CylinderGeometry(.02, .02, .004, 24), mat(0x111216, .5)));
-  const blades = new THREE.Group(); blades.position.y = .003; fanG.add(blades);
+  const blades = new THREE.Group(); blades.position.y = .003; blades.userData.live = true; fanG.add(blades);
   for (let i = 0; i < 5; i++) { const b = mesh(new THREE.BoxGeometry(.016, .001, .006), mat(0x2a2e3e, .5), false); b.position.x = .009; const h = new THREE.Group(); h.rotation.y = i * TAU / 5; h.add(b); b.rotation.x = .3; blades.add(h); }
   const led = glow(0xff3030);
   const l = mesh(new THREE.SphereGeometry(.003, 8, 6), led, false); l.position.set(-.04, .01, .025); group.add(l);
@@ -485,17 +481,11 @@ export function buildLaptop() {
   const group = new THREE.Group();
   const titles = [['DSA', 0x2c3e75, '#f4f1fa'], ['Clean Code', 0xd9774a, '#1a1c25'], ['Python', 0x3d7a5a, '#f4f1fa']];
   let y = 0;
-  titles.forEach(([title, color, ink], i) => {
+  titles.forEach(([, color], i) => {
     const h = .032 + (i % 2) * .006;
-    const spine = canvasTexture(256, 32, (ctx, w, hh) => {
-      ctx.fillStyle = `#${color.toString(16).padStart(6, '0')}`; ctx.fillRect(0, 0, w, hh);
-      ctx.fillStyle = ink; ctx.font = '700 20px "Space Grotesk", sans-serif'; ctx.textAlign = 'center'; ctx.fillText(title, w / 2, 23);
-    });
-    const m = mat(color, .7), page = mat(0xf2ede2, .9);
-    const book = mesh(new THREE.BoxGeometry(.32, h, .23), [page, m, m, m, new THREE.MeshStandardMaterial({ map: spine, roughness: .7 }), m]);
-    book.position.set((i - 1) * .008, y + h / 2, (i % 2) * .006);
-    book.rotation.y = (i - 1) * .04;
-    group.add(book);
+    const cover = mesh(new THREE.BoxGeometry(.32, h, .23), mat(color, .7));
+    const pages = mesh(new THREE.BoxGeometry(.31, h * .8, .222), mat(0xf2ede2, .9));
+    [cover, pages].forEach(m => { m.position.set((i - 1) * .008 + (m === pages ? .006 : 0), y + h / 2, (i % 2) * .006); m.rotation.y = (i - 1) * .04; group.add(m); });
     y += h;
   });
   const alu = mat(0xb9bcc6, .35, .6);
@@ -546,8 +536,7 @@ export function buildLava() {
   glass.position.y = .07; group.add(glass);
   const cap = mesh(new THREE.CylinderGeometry(.012, .019, .035, 24), metal); cap.position.y = .325; group.add(cap);
   const blobMat = glow(0xff8a4a);
-  const blobs = Array.from({ length: 5 }, (_, i) => { const b = mesh(new THREE.SphereGeometry(.014 + (i % 3) * .004, 16, 12), blobMat, false); group.add(b); return b; });
-  const light = new THREE.PointLight(0xff7a4a, .35, .7, 2); light.position.y = .18; group.add(light);
+  const blobs = Array.from({ length: 5 }, (_, i) => { const b = mesh(new THREE.SphereGeometry(.014 + (i % 3) * .004, 16, 12), blobMat, false); b.userData.live = true; group.add(b); return b; });
   return {
     group,
     update(t) {
@@ -602,7 +591,7 @@ export function buildWall(awards) {
     plaques.push(p);
   });
 
-  const poster = new THREE.Group(); poster.position.set(-1.05, .32, 0); group.add(poster);
+  const poster = new THREE.Group(); poster.position.set(-2.75, .12, 0); group.add(poster);
   const frame = rbox(.42, .3, .02, .006, mat(0x1a1c25, .4)); poster.add(frame);
   const art = canvasTexture(512, 360, (ctx, w, h) => {
     ctx.fillStyle = '#f4f1fa'; ctx.fillRect(0, 0, w, h);
@@ -615,7 +604,7 @@ export function buildWall(awards) {
   const artMesh = mesh(new THREE.PlaneGeometry(.38, .26), new THREE.MeshStandardMaterial({ map: art, roughness: .8 }), false);
   artMesh.position.z = .011; poster.add(artMesh);
 
-  const clock = new THREE.Group(); clock.position.set(-1.6, .35, 0); group.add(clock);
+  const clock = new THREE.Group(); clock.position.set(-2.05, .56, 0); group.add(clock);
   const rim = mesh(new THREE.CylinderGeometry(.11, .11, .025, 48), mat(0x1a1c25, .4)); rim.rotation.x = Math.PI / 2; clock.add(rim);
   const faceTex = canvasTexture(256, 256, ctx => {
     const d = new Date(), cx = 128;

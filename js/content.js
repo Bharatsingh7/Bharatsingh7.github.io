@@ -4,13 +4,44 @@
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const url = s => /^https?:\/\//.test(s) ? s : `https://${s}`;
 
-  // project art: explicit in extras, otherwise guessed from the project's words
-  function artFor(p) {
+  // project art: explicit in extras, else the first keyword match not already used by another project,
+  // else the next unused art in an order seeded by the project's name. New projects get their own animation.
+  const ART_RULES = [
+    ['wave', /voice|speech|whisper|audio|wake|music|sound/],
+    ['growth', /plant|agri|farm|soil|crop|garden|nature|tree/],
+    ['flow', /vision|camera|image|yolo|opencv|detect|neural|deep learning/],
+    ['orb', /sensor|iot|mqtt|arduino|esp32|air|weather|smart home/],
+    ['radar', /network|security|scan|ctf|vulnerab|wi-?fi|recon/],
+    ['gears', /robot|servo|motor|mechan|automation|actuator/],
+    ['packets', /web|api|server|backend|cloud|chat|socket|app\b|distributed/],
+    ['pulse', /health|heart|medical|ecg|fitness|\bbio/],
+    ['bars', /data|analytic|dashboard|finance|stock|predict|model/],
+    ['orbit', /satellite|gps|space|drone|navigation|tracking/],
+    ['terrain', /map|terrain|game|world|lidar|slam|3d/],
+    ['circuit', /embedded|firmware|pcb|hardware|fpga|microcontroller/],
+  ];
+  const ART_POOL = ART_RULES.map(r => r[0]);
+  const hash = s => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+  function artFor(p, used, forced) {
+    if (forced) return forced;
     const t = `${p.name} ${p.bullets.join(' ')} ${p.stack.join(' ')}`.toLowerCase();
-    if (/voice|speech|whisper|audio|wake/.test(t)) return 'wave';
-    if (/sensor|iot|mqtt|arduino|esp32|air/.test(t)) return 'orb';
-    if (/network|security|scan|ctf|vulnerab/.test(t)) return 'radar';
-    return 'circuit';
+    const hit = ART_RULES.find(([art, re]) => !used.has(art) && re.test(t));
+    if (hit) return hit[0];
+    const start = hash(p.name) % ART_POOL.length;
+    for (let i = 0; i < ART_POOL.length; i++) { const art = ART_POOL[(start + i) % ART_POOL.length]; if (!used.has(art)) return art; }
+    return ART_POOL[start];
+  }
+  // bento layout: blocks of [feature + two small], [two halves], [three thirds], repeating; short last blocks stretch
+  function sizes(n) {
+    const out = [], blocks = [['xl', 's', 's'], ['m', 'm'], ['t', 't', 't']];
+    for (let i = 0, b = 0; i < n; b++) {
+      const block = blocks[b % 3], k = Math.min(block.length, n - i);
+      if (k === block.length) out.push(...block);
+      else if (k === 1) out.push('full');
+      else out.push('m', 'm');
+      i += k;
+    }
+    return out;
   }
   const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 24) || 'project';
   const firstSentence = s => (s.match(/^.*?[.!?](\s|$)/) || [s])[0].trim();
@@ -28,24 +59,28 @@
       : d.titleParts.join(', ');
     $('#aria-text').placeholder = `Ask anything, e.g. does ${first} know Python?`;
 
-    document.querySelectorAll('.cv-link').forEach(a => { a.href = d.source; a.setAttribute('download', d.source.split('/').pop()); });
+    document.querySelectorAll('.resume-link').forEach(a => { a.href = d.source; a.setAttribute('download', d.source.split('/').pop()); });
 
     // projects
-    const projects = d.projects.map(p => {
+    const used = new Set(), size = sizes(d.projects.length);
+    const projects = d.projects.map((p, i) => {
       const key = Object.keys(x.projects || {}).find(k => p.name.toLowerCase().includes(k.toLowerCase()));
       const extra = key ? x.projects[key] : {};
+      const art = artFor(p, used, extra.art);
+      used.add(art);
+      const hue = Math.round((150 + i * 137.5) % 360);
       const tagline = extra.tagline || '';
       const bullets = tagline ? p.bullets : p.bullets.slice(1);
       return `
-      <article class="project reveal">
-        <div class="tab"><span>${esc(slug(p.name))}</span><span class="muted">${esc(p.dates || p.stack.slice(0, 2).join(' · ').toLowerCase())}</span></div>
-        <div class="project-body">
-          <h3>${esc(p.name)}</h3>
-          <p class="tagline">${esc(tagline || p.bullets[0] || '')}</p>
-          <div class="art"><canvas data-art="${esc(extra.art || artFor(p))}"></canvas></div>
-          <div class="readme">
-            ${bullets.length ? `<p class="h">## Highlights</p><ul>${bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul>` : ''}
-            ${p.stack.length ? `<p class="deps"><span class="k">"stack"</span>: [${p.stack.map(s => `<span>"${esc(s)}"</span>`).join(', ')}]</p>` : ''}
+      <article class="project reveal size-${size[i]} enter-${i % 4}" style="--h:${hue};transition-delay:${(i % 3) * 90}ms">
+        <div class="tilt">
+          <div class="art"><canvas data-art="${esc(art)}" data-hue="${hue}"></canvas><span class="file">${esc(slug(p.name))}.${art}</span></div>
+          <div class="project-body">
+            <p class="when">${esc(p.dates || p.stack.slice(0, 2).join(' · '))}</p>
+            <h3>${esc(p.name)}</h3>
+            <p class="tagline">${esc(tagline || p.bullets[0] || '')}</p>
+            ${p.stack.length ? `<p class="stack">${p.stack.slice(0, 6).map(s => `<span>${esc(s)}</span>`).join('')}</p>` : ''}
+            ${bullets.length ? `<details><summary>Highlights</summary><ul>${bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul></details>` : ''}
           </div>
         </div>
       </article>`;
@@ -94,7 +129,7 @@
       d.linkedin && `<a href="${esc(url(d.linkedin))}" target="_blank" rel="noopener">LinkedIn ↗</a>`,
       d.website && `<a href="${esc(url(d.website))}" target="_blank" rel="noopener">Website ↗</a>`,
       x.showPhone && d.phone && `<a href="tel:${esc(d.phone.replace(/[^\d+]/g, ''))}">${esc(d.phone)}</a>`,
-      `<a href="${esc(d.source)}" download>CV (PDF) ↓</a>`,
+      `<a href="${esc(d.source)}" download>Resume (PDF) ↓</a>`,
     ].filter(Boolean);
     $('#contact-links').innerHTML = links.join('');
 

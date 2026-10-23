@@ -1,10 +1,14 @@
 // The hero scene: room, desk props, ARIA and Bolt, plus the choreography that ties them to the chat
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { C, mat, rbox, Bubbles, Confetti, rand, pick } from './helpers.js';
+import { C, U, RGB_MODES, mat, rbox, mesh, glow, ledStrip, blobShadow, bake, rgbAt, Bubbles, Confetti, rand, pick, clamp } from './helpers.js';
 import { buildRobot } from './robot.js';
 import { buildBolt, makePaper, makeEnvelope } from './bolt.js';
 import * as P from './props.js';
+import * as G from './gadgets.js';
+import { Foliage } from './plants.js';
+import { buildRoomShell, BACK, CEIL, WIN } from './roomshell.js';
+import { quality, frameMonitor } from './quality.js';
 import { initCursorDrone } from './cursor-drone.js';
 
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -14,8 +18,9 @@ function hasWebGL() {
   try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; }
 }
 function makeRenderer(canvas, alpha) {
-  const r = new THREE.WebGLRenderer({ canvas, antialias: true, alpha, powerPreference: 'high-performance' });
-  r.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  const q = quality.s;
+  const r = new THREE.WebGLRenderer({ canvas, antialias: q.aa, alpha, powerPreference: 'high-performance' });
+  r.setPixelRatio(Math.min(devicePixelRatio || 1, q.dpr));
   r.toneMapping = THREE.ACESFilmicToneMapping;
   r.toneMappingExposure = 1.05;
   return r;
@@ -43,77 +48,144 @@ if (!hasWebGL()) {
 function initRoom() {
   const host = document.getElementById('scene');
   const canvas = document.getElementById('room');
+  const q = quality.s;
+  document.documentElement.dataset.quality = quality.tier;
   const renderer = makeRenderer(canvas, false);
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = q.shadows;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.autoUpdate = false;   // refreshed every few frames instead, see step()
+  renderer.localClippingEnabled = true;    // the 3D printer reveals its print with a clipping plane
 
+  const DAY_BG = new THREE.Color(0x0f1a15), NIGHT_BG = new THREE.Color(0x070b10);
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(C.bg);
-  scene.fog = new THREE.Fog(C.bg, 4.8, 10);
+  scene.background = DAY_BG.clone();
+  scene.fog = new THREE.Fog(DAY_BG.clone(), 6, 14);
   scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), .04).texture;
-  scene.environmentIntensity = .35;
-  const camera = new THREE.PerspectiveCamera(32, 1, .1, 40);
+  scene.environmentIntensity = .3;
+  const camera = new THREE.PerspectiveCamera(36, 1, .1, 40);
 
-  // ---- lights
-  scene.add(new THREE.HemisphereLight(0xaab4ff, 0x1a1420, .55));
-  const key = new THREE.DirectionalLight(0xfff1e6, 1.6);
-  key.position.set(2.2, 4, 2.6);
-  key.castShadow = true;
-  key.shadow.mapSize.set(2048, 2048);
-  Object.assign(key.shadow.camera, { left: -2.4, right: 2.4, top: 2.4, bottom: -1, near: .5, far: 12 });
-  key.shadow.bias = -.0004; key.shadow.normalBias = .02;
-  scene.add(key);
-  const rim = new THREE.DirectionalLight(C.accent2, 1.4);
-  rim.position.set(-3, 2.5, -2);
-  scene.add(rim);
+  // ---- room shell (walls, window, sun, neon, RGB cove) + soft fill lights
+  const shell = buildRoomShell(scene, q);
+  bake(shell.group);
+  const hemi = new THREE.HemisphereLight(0xd4ecdc, 0x2a2018, .5);
+  scene.add(hemi);
+  const fill = new THREE.DirectionalLight(0xe4ecff, .55);
+  fill.position.set(-2, 3, 5);
+  scene.add(fill);
+  // the low tier skips these two: every light adds shading cost to every pixel
+  const moon = new THREE.DirectionalLight(C.accent2, .2);
+  moon.position.set(-3, 2.5, -2);
+  const rgbLight = new THREE.PointLight(0xffffff, 1, 4.5, 1.6);
+  rgbLight.position.set(-.1, 1.5, -.45);
+  if (quality.tier !== 'low') scene.add(moon, rgbLight);
 
-  // ---- room + desk
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), mat(0x13162a, .95));
-  floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true;
-  scene.add(floor);
-  const wall = new THREE.Mesh(new THREE.PlaneGeometry(16, 7), mat(0x181c33, .92));
-  wall.position.set(0, 3.5, -.85); wall.receiveShadow = true;
-  scene.add(wall);
+  // ---- desk
   const TOP = .775;
   const desk = rbox(3.1, .05, 1.15, .02, mat(C.wood, .55)); desk.position.y = .75; scene.add(desk);
+  const legs = new THREE.Group();
   for (const [x, z] of [[-1.48, -.5], [1.48, -.5], [-1.48, .5], [1.48, .5]]) {
-    const leg = rbox(.05, .73, .05, .015, mat(C.steel, .4, .6)); leg.position.set(x, .365, z); scene.add(leg);
+    const leg = rbox(.05, .73, .05, .015, mat(C.steel, .4, .6)); leg.position.set(x, .365, z); legs.add(leg);
   }
+  scene.add(bake(legs));
+  const lip = ledStrip(3.06, { spill: 0, u0: .4, u1: 1.4, thick: .01 }); lip.position.set(0, .736, .582); scene.add(lip);
 
   // ---- bubbles + effects
   const bubbles = new Bubbles(document.getElementById('bubbles'), camera, canvas);
   const confetti = new Confetti(scene);
-  const fx = { say: (anchor, text, opts) => bubbles.say(anchor, text, opts) };
+  const fx = { say: (anchor, text, opts) => bubbles.say(anchor, text, opts), burst: at => confetti.burst(at) };
 
   // ---- props
   const updaters = [];
   const clickables = [];
-  function place(prop, x, z, ry = 0, y = TOP) {
+  function place(prop, x, z, ry = 0, y = TOP, shadow = null) {
     prop.group.position.set(x, y, z);
     prop.group.rotation.y = ry;
     scene.add(prop.group);
     if (prop.update) updaters.push(prop.update);
     if (prop.onClick) clickables.push(prop);
+    // soft contact shadows stand in for real ones on the low tier
+    if (shadow && !q.shadows) { const b = blobShadow(...shadow); b.position.set(x, y + .002, z); b.rotation.z = -ry; scene.add(b); }
+    bake(prop.group);   // merge the parts that never move (moving parts are flagged userData.live)
     return prop;
   }
-  const monitor = place(P.buildMonitor(), -.2, -.28);
+
+  // desk, left to right
+  const monitor = place(P.buildMonitor(), -.2, -.28, 0, TOP, [.5, .3]);
   place(P.buildKeyboard(), -.25, .17);
-  const laptop = place(P.buildLaptop(), -.9, -.16, .5);
-  const cat = place(P.buildCat(fx), 1.27, .36, -.5);
-  place(P.buildPlant(), -1.38, -.1);
-  place(P.buildLava(), -1.36, -.42);
-  place(P.buildMug(), -.68, .32);
-  place(P.buildDuck(fx), -.5, .42, .5);
+  place(P.buildLaptop(), -.95, -.16, .5, TOP, [.45, .35, .4]);
+  place(G.buildScope(), -1.33, -.36, .35, TOP, [.32, .26]);
+  place(P.buildPizza(), -1.15, .28, .2, TOP, [.34, .34, .3]);
+  place(G.buildController(), -.85, .45, .35);
+  place(P.buildMug(), -.66, .3);
+  place(P.buildDuck(fx), -.5, .44, .5);
   place(P.buildHeadphones(), -.08, .44, .25);
   place(P.buildCube(fx), .2, .42, .3);
   place(P.buildBreadboard(), .4, .3, -.15);
-  place(P.buildPi(), .93, -.3, -.4);
-  place(P.buildArm(), 1.18, -.12, 0);
-  place(P.buildCans(), 1.45, .0, -.2);
-  place(P.buildPizza(), -1.12, .3, .2);
-  const lamp = place(P.buildLamp(), 1.38, -.4, 0);
+  place(P.buildPi(), .5, -.45, -.4);
+  place(P.buildArm(), 1.02, -.2, 0, TOP, [.25, .25]);
+  place(G.buildPrinter(fx), 1.36, -.33, -.2, TOP, [.42, .42]);
+  const cat = place(P.buildCat(fx), 1.27, .36, -.5, TOP, [.4, .32]);
   const wallProps = place(P.buildWall(), .75, -.73, 0, 1.72);
-  void laptop; void lamp;
+
+  // floor and walls
+  const rgb = {
+    cycle() {
+      U.uMode.value = (U.uMode.value + 1) % RGB_MODES.length;
+      panel.refresh();
+      fx.say(panel.group, `RGB: ${RGB_MODES[U.uMode.value]}`, { offset: [0, .16, 0], dur: 1400 });
+    },
+  };
+  place(G.buildPC(() => rgb.cycle()), 2.08, -.7, 0, 0, [.6, .35]);
+  const panel = place(G.buildPanel({ isDay: () => shell.isDay, cycle: () => rgb.cycle() }), 1.5, BACK + .015, 0, 1.52);
+  place(G.buildChair(), -1.85, .8, .9, 0, [.7, .7]);
+  const shelfStrip = ledStrip(.88, { spill: .3, u0: .9, u1: 1.3 }); shelfStrip.position.set(.75, 1.7, -.64); scene.add(shelfStrip);
+  place(G.buildWalker(.1), .62, -.73, 0, 1.7325);
+  // a second shelf on the left: seedlings under a grow light, lava lamp, cans
+  const leftShelf = new THREE.Group(); leftShelf.position.set(-1.95, 1.3, -.75); scene.add(leftShelf);
+  leftShelf.add(rbox(1.0, .025, .2, .008, mat(C.wood, .55)));
+  const grow = new THREE.Group(); grow.position.set(-.22, .3, 0); leftShelf.add(grow);
+  grow.add(rbox(.42, .018, .04, .006, mat(0x2a2d36, .5)));
+  const growBar = mesh(new THREE.BoxGeometry(.38, .006, .02), glow(0xff5fd2), false); growBar.position.y = -.011; grow.add(growBar);
+  const growCone = mesh(new THREE.CylinderGeometry(.19, .3, .26, 4, 1, true), new THREE.MeshBasicMaterial({ color: 0xff4fc8, transparent: true, opacity: .07, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }), false);
+  growCone.rotation.y = Math.PI / 4; growCone.scale.z = .25; growCone.position.y = -.14; grow.add(growCone);
+  [-.2, .2].forEach(x => { const w = mesh(new THREE.CylinderGeometry(.002, .002, .2, 4), mat(0x777777, .5), false); w.position.set(x, .1, 0); grow.add(w); });
+  place(P.buildLava(), -1.62, -.75, 0, 1.3125);
+  place(P.buildCans(), -1.5, -.75, .3, 1.3125);
+
+  // ---- plants: everything leafy goes through one Foliage so it shares two instanced meshes
+  const fol = new Foliage(q.foliage);
+  fol.bush(new THREE.Vector3(-1.45, TOP, .08));
+  fol.monstera(new THREE.Vector3(-2.3, 0, -.45));
+  fol.snake(new THREE.Vector3(2.75, 0, -.6));
+  fol.snake(new THREE.Vector3(-2.75, 0, .2));
+  fol.seedlings(new THREE.Vector3(-2.17, 1.3125, -.75));
+  const hooks = [[-1.25, -.45, .42, 1.0], [.95, -.4, .32, .7], [2.6, -.55, .5, 1.1], [-2.55, -.3, .45, .9]];
+  const pots = hooks.map(([x, z, drop, length]) => fol.hanging(new THREE.Vector3(x, CEIL, z), { drop, length, vines: 5 }));
+  const sillY = WIN.y0 + .0075;
+  const sillStops = [1.95, 2.2, 2.45, 2.7];
+  sillStops.forEach((x, i) => fol.succulent(new THREE.Vector3(x, sillY, BACK + .1), 1.1, [0x7fb58a, 0x9cc7a0, 0x6fa77f, 0xa9c98a][i]));
+  // vines framing the window and draping off the wall shelf
+  fol.vine([[WIN.x0 - .05, WIN.y1 + .06, BACK + .05], [(WIN.x0 + WIN.x1) / 2, WIN.y1 + .02, BACK + .06], [WIN.x1 + .04, WIN.y1 + .05, BACK + .05], [WIN.x1 + .07, WIN.y1 - .4, BACK + .06], [WIN.x1 + .05, WIN.y0 + .3, BACK + .07]].map(p => new THREE.Vector3(...p)), { size: .05 });
+  fol.vine([[WIN.x0 - .04, WIN.y1 + .04, BACK + .05], [WIN.x0 - .08, WIN.y1 - .5, BACK + .06], [WIN.x0 - .05, WIN.y1 - .8, BACK + .08]].map(p => new THREE.Vector3(...p)), { size: .048 });
+  fol.vine([[.36, 1.735, -.64], [.33, 1.6, -.62], [.36, 1.42, -.6], [.33, 1.3, -.6]].map(p => new THREE.Vector3(...p)), { size: .045 });
+  fol.vine([[1.15, 1.735, -.64], [1.18, 1.62, -.62], [1.16, 1.52, -.6]].map(p => new THREE.Vector3(...p)), { size: .045 });
+  // terrarium on top of the PC, with ferns from the shared foliage
+  const terraAt = new THREE.Vector3(2.0, .5, -.7);
+  const terra = G.buildTerrarium(fol, terraAt);
+  terra.group.position.copy(terraAt); scene.add(terra.group); updaters.push(terra.update);
+  fol.build(scene);
+  bake(fol.statics);
+  clickables.push(...fol.meshes.map(m => ({ group: m, onClick: hitAt => plantClick(hitAt) })));
+
+  // ---- little robots: vacuum on the floor, SproutBot on the windowsill
+  const vacuum = place(G.buildVacuum(fx, { x0: -1.3, x1: 2.9, z0: .78, z1: 1.7 }, [{ x: -1.85, z: .8, r: .4 }]), 0, 0, 0, 0);
+  const sprout = place(G.buildSproutBot(fx, sillStops.map(x => x - (WIN.x0 + WIN.x1) / 2)), (WIN.x0 + WIN.x1) / 2, BACK + .16, 0, sillY);
+
+  // ---- clickable room bits
+  clickables.push(
+    { group: shell.windowHit, onClick: () => { shell.setDay(!shell.isDay); panel.refresh(); fx.say(shell.windowHit, shell.isDay ? 'Good morning ☀️' : 'Lights on 🌙', { offset: [0, .2, .2], dur: 1500 }); } },
+    ...shell.signs.map(m => ({ group: m, onClick: () => shell.poke(m) })),
+  );
 
   // ---- ARIA + Bolt
   const RS = 1.4;   // ARIA is drawn larger than life so emotes read at a glance
@@ -225,6 +297,28 @@ function initRoom() {
       await wait(800);
       await bolt.land();
     }),
+    water: at => routine(async () => {
+      const spot = (at || pick(pots)).clone();
+      await bolt.takeoff(.3);
+      await bolt.goTo(spot.clone().add(v3(0, .22, .25)));
+      fx.say(bolt.group, 'Watering 🌱', { offset: [0, .1, 0], dur: 1500 });
+      for (let i = 0; i < 3; i++) { fx.say(() => spot.clone().add(v3(rand(-.08, .08), .12, .1)), '💧', { emoji: true, dur: 1100 }); U.uGust.value = .6; await wait(450); }
+      robot.emote('hop');
+      fx.say(robot.head, '💚', { emoji: true, offset: [0, .2, 0] });
+      await wait(400);
+      await bolt.land();
+    }),
+    chase: () => routine(async () => {
+      await bolt.takeoff(.3);
+      fx.say(bolt.group, 'Race you!', { offset: [0, .1, 0], dur: 1400 });
+      cat.wake(pick(['…a robot on a robot?', '!?', 'Mrrp?!']));
+      robot.emote('surprised');
+      const over = () => vacuum.position.clone().add(v3(0, .4, 0));
+      await bolt.goTo(over(), { tol: .06 });
+      await bolt.path(() => over(), 3200);
+      vacuum.spin();
+      await bolt.land();
+    }),
     trophies: () => routine(async () => {
       await bolt.takeoff(.3);
       const c = wallProps.group.position.clone().add(v3(.2, .2, .18));
@@ -252,6 +346,11 @@ function initRoom() {
       fx.say(robot.head, 'Too… many… clicks…', { offset: [0, .22, 0] });
       pokes = [];
     }
+  }
+  function plantClick(at) {
+    U.uGust.value = 1;
+    fx.say(() => at, pick(['🌿', '🍃', '✨']), { emoji: true, dur: 1200 });
+    if (!show && Math.random() < .6) combos.water(at);
   }
   function boltClick() {
     fx.say(bolt.group, pick(['beep boop', 'bzzt!', 'Bolt, reporting!', '*happy whirring*']), { offset: [0, .1, 0], dur: 1500 });
@@ -297,6 +396,7 @@ function initRoom() {
     [3, () => robot.emote('dance')], [2, () => robot.emote('spin')], [2, () => robot.emote('backflip')],
     [1, () => robot.emote('stretch')], [1, () => robot.emote('wave')],
     [2, combos.highfive], [2, combos.ride], [2, combos.patrol], [2, combos.orbit], [2, combos.scanCat],
+    [2, () => combos.water()], [2, combos.chase],
   ];
   const total = ANTICS.reduce((a, [w]) => a + w, 0);
   function idleTick(now) {
@@ -322,10 +422,21 @@ function initRoom() {
       ['$ ', 'aria --listen'], ['', 'ready.'],
     ]);
     wallProps.setAwards(d.awards);
+    shell.setName((d.name || 'hello').split(/\s+/)[0]);
   });
-  document.fonts.ready.then(() => { monitor.redrawFonts(); wallProps.redrawFonts(); });
+  document.fonts.ready.then(() => { monitor.redrawFonts(); wallProps.redrawFonts(); panel.refresh(); });
+  document.fonts.load('400 64px Yellowtail').then(() => shell.redrawFonts(), () => {});
+  // day or night from the visitor's own clock
+  const hour = new Date().getHours();
+  shell.setDay(hour >= 6 && hour < 18, true);
 
   // ---- framing
+  // wide: desk sits right of the hero text; narrow (phones): close in on ARIA, the neon sign and the shelf.
+  // fit widens the narrow view on very tall screens so the desk never gets cropped
+  const VIEW = {
+    wide: { look: [.35, 1.3, 0], dist: 5.1, yaw: -.2, h: 1.78 },
+    narrow: { look: [.75, 1.42, 0], dist: 4.3, yaw: -.12, h: 1.65, fit: .8 },
+  };
   let W = 1, H = 1, wide = true;
   function resize() {
     const r = host.getBoundingClientRect();
@@ -346,54 +457,93 @@ function initRoom() {
   new ResizeObserver(resize).observe(host);
   resize();
 
-  // ---- clicking things in the scene
+  // ---- clicking things in the scene, and dragging to look around
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+  const targets = () => clickables.map(c => c.group);
   function hit(e) {
     const r = canvas.getBoundingClientRect();
     ndc.set((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
     ray.setFromCamera(ndc, camera);
-    const hits = ray.intersectObjects(clickables.map(c => c.group), true);
+    const hits = ray.intersectObjects(targets(), true);
     if (!hits.length) return null;
     let o = hits[0].object;
-    while (o) { const c = clickables.find(x => x.group === o); if (c) return c; o = o.parent; }
+    while (o) { const c = clickables.find(x => x.group === o); if (c) return { c, point: hits[0].point }; o = o.parent; }
     return null;
   }
   const hero = host.parentElement;
   const onUi = e => e.target.closest('.hero-col > *');
-  hero.addEventListener('pointermove', e => { if (!onUi(e)) canvas.style.cursor = hit(e) ? 'pointer' : ''; });
-  hero.addEventListener('click', e => { if (!onUi(e)) hit(e)?.onClick(); });
+  const drag = { on: false, x0: 0, yaw0: 0, yaw: 0, moved: false, releasedAt: -1e9 };
+  canvas.style.touchAction = 'pan-y';   // vertical swipes still scroll the page; sideways ones turn the view
+  hero.addEventListener('pointerdown', e => {
+    if (onUi(e)) return;
+    Object.assign(drag, { on: true, x0: e.clientX, yaw0: drag.yaw, moved: false });
+  });
+  addEventListener('pointermove', e => {
+    if (!drag.on) return;
+    const dx = e.clientX - drag.x0;
+    if (Math.abs(dx) > 6) drag.moved = true;
+    if (drag.moved) drag.yaw = clamp(drag.yaw0 - dx * .0035, -.5, .5);
+  }, { passive: true });
+  const endDrag = () => { if (drag.on) { drag.on = false; drag.releasedAt = performance.now(); } };
+  addEventListener('pointerup', endDrag);
+  addEventListener('pointercancel', () => { drag.on = false; drag.moved = false; drag.releasedAt = performance.now(); });
+  hero.addEventListener('pointermove', e => { if (!onUi(e) && !drag.on && finePointer) canvas.style.cursor = hit(e) ? 'pointer' : 'grab'; });
+  hero.addEventListener('click', e => {
+    if (onUi(e) || drag.moved) return;
+    const h = hit(e);
+    h?.c.onClick(h.point);
+  });
 
-  window.ARIA3D = { emote: n => robot.emote(n, { force: true }), combo: n => combos[n]?.(), robot, bolt };
+  window.ARIA3D = { emote: n => robot.emote(n, { force: true }), combo: (n, ...a) => combos[n]?.(...a), robot, bolt, quality, renderer, rgb, shell, scene, camera };
 
   // ---- loop
-  let visible = true, frame = 0, last = performance.now();
+  let visible = true, frame = 0, last = performance.now(), lastRender = 0;
   const introStart = performance.now();
   new IntersectionObserver(([e]) => { visible = e.isIntersecting; }).observe(host);
-  const lookAt = v3(.05, 1.0, 0), smooth = { x: 0, y: 0 }, tmp = new THREE.Vector3();
+  const smooth = { x: 0, y: 0 }, tmp = new THREE.Vector3(), look = new THREE.Vector3();
+  const monitorFps = frameMonitor(tier => {
+    const s2 = quality.s;
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, s2.dpr));
+    resize();
+    if (!s2.shadows) { shell.sun.castShadow = false; shell.sun.intensity *= .6; }
+    if (!s2.dust && shell.dust) shell.dust.visible = false;
+    document.documentElement.dataset.quality = tier;
+    console.info(`[room] running slow, quality → ${tier}`);
+  });
 
   function tick(now) {
     requestAnimationFrame(tick);
+    if (!visible || document.hidden) { last = now; return; }
+    const minGap = 1000 / quality.s.fps - 2;
+    if (now - lastRender < minGap) return;
+    const ms = now - (lastRender || now);
+    lastRender = now;
     const dt = Math.min(.05, (now - last) / 1000); last = now;
-    if (!visible || document.hidden) return;
     step(dt, now);
     renderer.render(scene, camera);
     bubbles.update();
+    monitorFps(ms);
   }
 
+  const dayBg = new THREE.Color();
   function step(dt, now) {
     t += dt; frame++;
+    U.uTime.value = t;
+    U.uGust.value = Math.max(0, U.uGust.value - dt * .7);
     for (let i = timers.length - 1; i >= 0; i--) if (t >= timers[i].at) timers.splice(i, 1)[0].resolve();
 
+    // camera: intro sweep, a little cursor parallax, plus whatever the visitor dragged (eases back after a while)
     const intro = reduce ? 1 : Math.min(1, (now - introStart) / 2400);
     const e = 1 - Math.pow(1 - intro, 3);
     smooth.x += (pointer.x - smooth.x) * .05;
     smooth.y += (pointer.y - smooth.y) * .05;
-    const dist = wide ? 4.7 : 3.3 * Math.max(1, 1 / (W / H));
-    const yaw = (wide ? -.22 : -.08) + smooth.x * .1 + (1 - e) * .5;
-    tmp.copy(lookAt);
-    if (!wide) tmp.set(.35, .92, 0);   // phones: close in on ARIA's half of the desk
-    camera.position.set(tmp.x - Math.sin(yaw) * dist, 1.62 + smooth.y * .07 + (1 - e) * .5, Math.cos(yaw) * dist);
-    camera.lookAt(tmp);
+    if (!drag.on && now - drag.releasedAt > 4000) drag.yaw *= .97;
+    const v = wide ? VIEW.wide : VIEW.narrow;
+    const dist = wide ? v.dist : v.dist * Math.max(1, v.fit / (W / H));
+    const yaw = v.yaw + (finePointer ? smooth.x * .08 : 0) + drag.yaw + (1 - e) * .5;
+    look.set(...v.look);
+    camera.position.set(look.x - Math.sin(yaw) * dist, v.h + (finePointer ? smooth.y * .07 : 0) + (1 - e) * .5, look.z + Math.cos(yaw) * dist);
+    camera.lookAt(look);
 
     // robot head follows the cursor: aim from the head's on-screen position
     robot.head.getWorldPosition(tmp).project(camera);
@@ -402,18 +552,36 @@ function initRoom() {
     const lx = THREE.MathUtils.clamp((pointer.px - hx) / innerWidth * 2.2, -.9, .9) + .3;
     const ly = THREE.MathUtils.clamp((pointer.py - hy) / innerHeight * 1.6, -.4, .45);
 
+    // day and night: sun, fill and sky fade, RGB takes over at night
+    shell.update(t, dt);
+    const d = shell.day;
+    shell.sun.intensity = (quality.s.shadows ? 5 : 1.8) * d;
+    hemi.intensity = .25 + .65 * d;
+    fill.intensity = .2 + .55 * d;
+    moon.intensity = .55 - .35 * d;
+    U.uLevel.value = 1 - .4 * d;
+    rgbLight.color.copy(rgbAt(.6));
+    rgbLight.intensity = U.uMode.value === 3 ? 0 : .5 + 1.6 * (1 - d);
+    dayBg.copy(NIGHT_BG).lerp(DAY_BG, d);
+    scene.background.copy(dayBg); scene.fog.color.copy(dayBg);
+    renderer.toneMappingExposure = .95 + .12 * d;
+
     robot.update(t, lx, ly);
     bolt.update(dt, t);
     updaters.forEach(u => u(t, dt));
     confetti.update(dt);
     if (idleOn) idleTick(now);
+
+    const every = quality.s.shadowEvery;
+    if (every && frame % every === 0) renderer.shadowMap.needsUpdate = true;
   }
   requestAnimationFrame(tick);
 
   // debug/testing: advance the simulation without waiting for frames (handy where WebGL is slow)
   let idleOn = true;
   Object.assign(window.ARIA3D, {
-    advance(sec) { for (let i = 0; i < sec * 30; i++) step(1 / 30, performance.now()); renderer.render(scene, camera); bubbles.update(); },
+    advance(sec) { for (let i = 0; i < sec * 30; i++) step(1 / 30, performance.now()); renderer.shadowMap.needsUpdate = true; renderer.render(scene, camera); bubbles.update(); },
     idle(on) { idleOn = on; },
+    info: () => ({ tier: quality.tier, calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, dpr: renderer.getPixelRatio(), shadows: shell.sun.castShadow }),
   });
 }

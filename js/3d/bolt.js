@@ -1,7 +1,7 @@
 // Bolt: a little desk drone that sleeps on a charging pad and runs errands for ARIA.
 // Movement is a spring toward a target; the async helpers make choreography read top to bottom.
 import * as THREE from 'three';
-import { C, mat, glow, mesh, rbox, ease } from './helpers.js';
+import { C, mat, glow, mesh, rbox, bake, ease } from './helpers.js';
 
 export function buildBolt(scene, padPos, scale = 1) {
   // charging pad
@@ -37,7 +37,7 @@ export function buildBolt(scene, padPos, scale = 1) {
     rotor.add(mesh(new THREE.BoxGeometry(.085, .002, .009), mat(0x2a2e3e, .4)));
     const disc = mesh(new THREE.CircleGeometry(.043, 24), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false }), false);
     disc.rotation.x = -Math.PI / 2; rotor.add(disc);
-    tilt.add(rotor); rotors.push({ rotor, disc });
+    rotor.userData.live = true; tilt.add(rotor); rotors.push({ rotor, disc });
     const led = mesh(new THREE.SphereGeometry(.004, 8, 6), glow(z < 0 ? 0xff6b6b : C.mint), false);
     led.position.set(x * .075, -.006, z * .066); tilt.add(led);
   }
@@ -46,6 +46,7 @@ export function buildBolt(scene, padPos, scale = 1) {
     color: C.mint, transparent: true, opacity: .14, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, toneMapped: false,
   }), false);
   cone.position.y = -.16; cone.visible = false; tilt.add(cone);
+  bake(tilt);
   const slot = new THREE.Group(); slot.position.y = -.03; group.add(slot);
   scene.add(group);
   group.scale.setScalar(scale);
