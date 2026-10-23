@@ -2,8 +2,8 @@
 // ?q=low|mid|high in the URL forces a tier (handy for testing).
 const TIERS = ['low', 'mid', 'high'];
 export const SETTINGS = {
-  high: { dpr: 2, aa: true, shadows: true, shadowSize: 2048, shadowEvery: 2, foliage: 1, dust: true, fps: 60, tex: 1 },
-  mid: { dpr: 1.5, aa: true, shadows: true, shadowSize: 1024, shadowEvery: 4, foliage: .7, dust: true, fps: 60, tex: 1 },
+  high: { dpr: 1.5, aa: true, shadows: true, shadowSize: 2048, shadowEvery: 2, foliage: 1, dust: true, fps: 60, tex: 1 },
+  mid: { dpr: 1.25, aa: true, shadows: true, shadowSize: 1024, shadowEvery: 4, foliage: .7, dust: true, fps: 60, tex: 1 },
   low: { dpr: 1, aa: false, shadows: false, shadowSize: 512, shadowEvery: 0, foliage: .45, dust: false, fps: 30, tex: .5 },
 };
 
@@ -40,7 +40,7 @@ export function frameMonitor(onDrop) {
     if (n < 90) return;
     const avg = sum / n;
     n = 0; sum = 0;
-    if (avg > 28) {
+    if (avg > 24) {   // under ~40 fps
       quality.tier = TIERS[TIERS.indexOf(quality.tier) - 1];
       warm = 0;
       onDrop(quality.tier);

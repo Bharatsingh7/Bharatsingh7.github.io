@@ -28,7 +28,7 @@ a { color: inherit; text-decoration: none; }
 .muted { color: var(--muted); }
 .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--mint); margin-right: .55rem; vertical-align: middle; box-shadow: 0 0 0 3px rgba(126, 224, 195, .15); }
 
-#drone { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 60; }
+#drone { position: fixed; left: 0; top: 0; pointer-events: none; z-index: 60; will-change: transform; }
 
 /* ---------- nav ---------- */
 .nav {
@@ -75,9 +75,10 @@ a { color: inherit; text-decoration: none; }
 /* keeps the hero text readable over the busy left side of the room */
 .hero::before {
   content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
-  background: linear-gradient(90deg, rgba(12, 20, 17, .88) 0%, rgba(12, 20, 17, .7) 28%, rgba(12, 20, 17, 0) 46%);
+  background: linear-gradient(90deg, rgba(12, 20, 17, .88) 0%, rgba(12, 20, 17, .7) calc(var(--col, 40vw) * .6), rgba(12, 20, 17, 0) calc(var(--col, 40vw) + 40px));
 }
-.hero-scene canvas { display: block; width: 100%; height: 100%; }
+.hero-scene canvas { display: block; width: 100%; height: 100%; opacity: 0; transition: opacity .9s ease; }
+.hero-scene canvas.ready { opacity: 1; }
 .no-gl { display: none; }
 .no-webgl .no-gl { display: block; position: absolute; right: 2rem; bottom: 2rem; font-family: var(--mono); font-size: .75rem; color: var(--muted); }
 .no-webgl .hero-scene { background: radial-gradient(ellipse at 70% 50%, #1f3a2e, var(--bg) 70%); }
@@ -90,7 +91,8 @@ h1 { font-size: clamp(2.4rem, 5.4vw, 4.3rem); font-weight: 700; line-height: 1.0
 .cta { display: flex; flex-wrap: wrap; gap: .8rem; margin-top: 1.5rem; }
 
 /* ---------- ARIA chat ---------- */
-.aria { background: rgba(17, 27, 23, .8); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .7); overflow: hidden; }
+/* no backdrop blur: blurring a live 3D canvas costs a full extra pass every frame */
+.aria { background: rgba(17, 27, 23, .94); box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .7); overflow: hidden; }
 .aria-head { display: flex; justify-content: space-between; gap: 1rem; padding: .75rem 1rem; border-bottom: 1px solid var(--line); font-family: var(--mono); font-size: .72rem; letter-spacing: .06em; }
 .aria-head > span:first-child { color: var(--text); font-weight: 500; white-space: nowrap; }
 .aria-log { height: 168px; overflow-y: auto; padding: .9rem 1rem; display: flex; flex-direction: column; gap: .6rem; scroll-behavior: smooth; }

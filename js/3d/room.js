@@ -40,9 +40,14 @@ if (!hasWebGL()) {
   document.documentElement.classList.add('no-webgl');
   document.getElementById('drone').remove();
 } else {
-  initRoom();
-  if (finePointer && !reduce) initCursorDrone(document.getElementById('drone'), pointer, makeRenderer);
-  else document.getElementById('drone').remove();
+  // build the room after the page has loaded and painted, so the text shows up straight away
+  const idle = fn => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 1200 }) : setTimeout(fn, 200));
+  const start = () => idle(() => {
+    initRoom();
+    if (finePointer && !reduce) initCursorDrone(document.getElementById('drone'), pointer, makeRenderer);
+    else document.getElementById('drone').remove();
+  });
+  if (document.readyState === 'complete') start(); else addEventListener('load', start, { once: true });
 }
 
 function initRoom() {
@@ -60,8 +65,11 @@ function initRoom() {
   const scene = new THREE.Scene();
   scene.background = DAY_BG.clone();
   scene.fog = new THREE.Fog(DAY_BG.clone(), 6, 14);
-  scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), .04).texture;
-  scene.environmentIntensity = .3;
+  // reflections from a baked room environment; the low tier skips it (it costs a few hundred ms to build)
+  if (q.tex === 1) {
+    scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), .04).texture;
+    scene.environmentIntensity = .3;
+  }
   const camera = new THREE.PerspectiveCamera(36, 1, .1, 40);
 
   // ---- room shell (walls, window, sun, neon, RGB cove) + soft fill lights
@@ -437,17 +445,25 @@ function initRoom() {
     wide: { look: [.35, 1.3, 0], dist: 5.1, yaw: -.2, h: 1.78 },
     narrow: { look: [.75, 1.42, 0], dist: 4.3, yaw: -.12, h: 1.65, fit: .8 },
   };
-  let W = 1, H = 1, wide = true;
+  let W = 1, H = 1, wide = true, wideDist = 5.1, rect = canvas.getBoundingClientRect();
+  const hero = host.parentElement;
   function resize() {
     const r = host.getBoundingClientRect();
+    rect = canvas.getBoundingClientRect();
     W = Math.max(1, r.width); H = Math.max(1, r.height);
     renderer.setSize(W, H, false);
     wide = W > 960 && W / H > 1.1;
     if (wide) {
-      // render a wider virtual view and show its left part, so the desk sits to the right of the text
-      const full = W * 1.22;
+      // render a wider virtual view and show its left part, so the room's centre lands in the middle of the
+      // free space right of the text column; then back the camera off until the whole desk fits in that space
+      const col = document.querySelector('.hero-col').getBoundingClientRect();
+      const colRight = Math.min(W * .55, col.right - r.left + 24);
+      const full = W + colRight;
       camera.aspect = full / H;
       camera.setViewOffset(full, H, 0, 0, W, H);
+      const halfDesk = 1.75;   // desk plus a little margin, in metres
+      wideDist = clamp(halfDesk * H / ((W - colRight) * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))), VIEW.wide.dist, 8);
+      hero.style.setProperty('--col', `${colRight}px`);
     } else {
       camera.aspect = W / H;
       camera.clearViewOffset();
@@ -455,7 +471,6 @@ function initRoom() {
     camera.updateProjectionMatrix();
   }
   new ResizeObserver(resize).observe(host);
-  resize();
 
   // ---- clicking things in the scene, and dragging to look around
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
@@ -470,7 +485,9 @@ function initRoom() {
     while (o) { const c = clickables.find(x => x.group === o); if (c) return { c, point: hits[0].point }; o = o.parent; }
     return null;
   }
-  const hero = host.parentElement;
+  // the canvas rect is cached (reading it every frame forces a layout); scrolling only moves it
+  addEventListener('scroll', () => { rect = canvas.getBoundingClientRect(); }, { passive: true });
+  resize();
   const onUi = e => e.target.closest('.hero-col > *');
   const drag = { on: false, x0: 0, yaw0: 0, yaw: 0, moved: false, releasedAt: -1e9 };
   canvas.style.touchAction = 'pan-y';   // vertical swipes still scroll the page; sideways ones turn the view
@@ -487,7 +504,13 @@ function initRoom() {
   const endDrag = () => { if (drag.on) { drag.on = false; drag.releasedAt = performance.now(); } };
   addEventListener('pointerup', endDrag);
   addEventListener('pointercancel', () => { drag.on = false; drag.moved = false; drag.releasedAt = performance.now(); });
-  hero.addEventListener('pointermove', e => { if (!onUi(e) && !drag.on && finePointer) canvas.style.cursor = hit(e) ? 'pointer' : 'grab'; });
+  // hover feedback raycasts at most ~8 times a second, and only for a mouse
+  let lastHover = 0;
+  hero.addEventListener('pointermove', e => {
+    if (!finePointer || drag.on || onUi(e) || e.timeStamp - lastHover < 120) return;
+    lastHover = e.timeStamp;
+    canvas.style.cursor = hit(e) ? 'pointer' : 'grab';
+  });
   hero.addEventListener('click', e => {
     if (onUi(e) || drag.moved) return;
     const h = hit(e);
@@ -521,6 +544,7 @@ function initRoom() {
     const dt = Math.min(.05, (now - last) / 1000); last = now;
     step(dt, now);
     renderer.render(scene, camera);
+    if (!canvas.classList.contains('ready')) canvas.classList.add('ready');
     bubbles.update();
     monitorFps(ms);
   }
@@ -539,7 +563,7 @@ function initRoom() {
     smooth.y += (pointer.y - smooth.y) * .05;
     if (!drag.on && now - drag.releasedAt > 4000) drag.yaw *= .97;
     const v = wide ? VIEW.wide : VIEW.narrow;
-    const dist = wide ? v.dist : v.dist * Math.max(1, v.fit / (W / H));
+    const dist = wide ? wideDist : v.dist * Math.max(1, v.fit / (W / H));
     const yaw = v.yaw + (finePointer ? smooth.x * .08 : 0) + drag.yaw + (1 - e) * .5;
     look.set(...v.look);
     camera.position.set(look.x - Math.sin(yaw) * dist, v.h + (finePointer ? smooth.y * .07 : 0) + (1 - e) * .5, look.z + Math.cos(yaw) * dist);
@@ -547,8 +571,7 @@ function initRoom() {
 
     // robot head follows the cursor: aim from the head's on-screen position
     robot.head.getWorldPosition(tmp).project(camera);
-    const r = canvas.getBoundingClientRect();
-    const hx = r.left + (tmp.x + 1) / 2 * r.width, hy = r.top + (1 - tmp.y) / 2 * r.height;
+    const hx = rect.left + (tmp.x + 1) / 2 * rect.width, hy = rect.top + (1 - tmp.y) / 2 * rect.height;
     const lx = THREE.MathUtils.clamp((pointer.px - hx) / innerWidth * 2.2, -.9, .9) + .3;
     const ly = THREE.MathUtils.clamp((pointer.py - hy) / innerHeight * 1.6, -.4, .45);
 

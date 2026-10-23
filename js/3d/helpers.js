@@ -69,6 +69,9 @@ export class Bubbles {
     this.el = container; this.camera = camera; this.canvas = canvas;
     this.list = [];
     this.v = new THREE.Vector3();
+    // cached size: reading clientWidth every frame right after moving bubbles forces a layout
+    this.w = container.clientWidth; this.h = container.clientHeight;
+    new ResizeObserver(() => { this.w = container.clientWidth; this.h = container.clientHeight; }).observe(container);
   }
   // anchor: Object3D (plus offset) or a function returning a Vector3
   say(anchor, text, { emoji = false, dur = 2200, offset = [0, 0, 0] } = {}) {
@@ -81,8 +84,9 @@ export class Bubbles {
     return b;
   }
   update() {
+    if (!this.list.length) return;
     const now = performance.now();
-    const w = this.el.clientWidth, h = this.el.clientHeight;
+    const w = this.w, h = this.h;
     this.list = this.list.filter(b => {
       if (now > b.until) {
         b.el.classList.add('out');

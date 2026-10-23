@@ -183,7 +183,7 @@ export function buildScope() {
   }
   return {
     group,
-    update(t) { if (frame++ % 3 === 0) tex.redraw(t); },
+    update(t) { if (frame++ % 4 === 0) tex.redraw(t); },
     onClick() { mode = (mode + 1) % 3; },
   };
 }

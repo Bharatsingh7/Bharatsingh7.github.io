@@ -15,7 +15,6 @@ export function initCursorDrone(canvas, pointer, makeRenderer) {
   scene.add(sun);
 
   const camera = new THREE.PerspectiveCamera(30, 1, .1, 50);
-  camera.position.set(0, 0, 10);
 
   const drone = new THREE.Group();
   const tilt = new THREE.Group();
@@ -47,47 +46,41 @@ export function initCursorDrone(canvas, pointer, makeRenderer) {
   }
   scene.add(drone);
 
-  let W = innerWidth, H = innerHeight;
-  function resize() {
-    W = innerWidth; H = innerHeight;
-    renderer.setSize(W, H, false);
-    camera.aspect = W / H;
-    camera.updateProjectionMatrix();
-  }
-  addEventListener('resize', resize);
-  resize();
+  // the canvas is only S×S pixels and is moved with a CSS transform: far cheaper than a full-screen WebGL layer
+  const S = 180;
+  renderer.setSize(S, S, false);
+  canvas.style.width = canvas.style.height = `${S}px`;
+  camera.position.set(0, 0, 2.2);
+  camera.aspect = 1;
+  camera.updateProjectionMatrix();
 
-  // screen pixel -> world point on the z=0 plane
-  const v = new THREE.Vector3(), dir = new THREE.Vector3();
-  function toWorld(px, py, out) {
-    v.set(px / W * 2 - 1, -(py / H) * 2 + 1, .5).unproject(camera);
-    dir.copy(v).sub(camera.position).normalize();
-    return out.copy(camera.position).addScaledVector(dir, -camera.position.z / dir.z);
-  }
-
-  const target = new THREE.Vector3(), pos = new THREE.Vector3(), vel = new THREE.Vector3(), acc = new THREE.Vector3();
-  toWorld(W * .7, H * .3, pos);
+  // spring physics in screen pixels; K turns pixel speed into the old world-unit speed for the tilt
+  const K = .006;
+  const pos = { x: innerWidth * .7, y: innerHeight * .3 }, vel = { x: 0, y: 0 };
   let scale = 0, last = performance.now();
   function tick(now) {
     requestAnimationFrame(tick);
     if (document.hidden) return;
     const dt = Math.min(.05, (now - last) / 1000); last = now;
     const t = now / 1000;
+    scale += ((pointer.inside ? 1 : 0) - scale) * .08;
+    if (scale < .01) { canvas.style.visibility = 'hidden'; return; }
+    canvas.style.visibility = '';
 
-    toWorld(pointer.px + 70, pointer.py - 60, target);
-    acc.copy(target).sub(pos).multiplyScalar(9);
-    vel.addScaledVector(acc, dt).multiplyScalar(Math.pow(.04, dt));
-    pos.addScaledVector(vel, dt);
-    drone.position.set(pos.x, pos.y + Math.sin(t * 2.4) * .03, 0);
+    const tx = pointer.px + 70, ty = pointer.py - 60, damp = Math.pow(.04, dt);
+    vel.x = (vel.x + (tx - pos.x) * 9 * dt) * damp;
+    vel.y = (vel.y + (ty - pos.y) * 9 * dt) * damp;
+    pos.x += vel.x * dt; pos.y += vel.y * dt;
+    const bob = Math.sin(t * 2.4) * 5;
+    canvas.style.transform = `translate3d(${pos.x - S / 2}px, ${pos.y - S / 2 + bob}px, 0)`;
 
     // bank into motion, seen slightly from above
-    tilt.rotation.x = .55 + THREE.MathUtils.clamp(-vel.y * .12, -.4, .4);
-    tilt.rotation.z = THREE.MathUtils.clamp(-vel.x * .12, -.55, .55);
-    tilt.rotation.y += (THREE.MathUtils.clamp(vel.x * .08, -.5, .5) - tilt.rotation.y) * .1;
+    const vx = vel.x * K, vy = -vel.y * K;
+    tilt.rotation.x = .55 + THREE.MathUtils.clamp(-vy * .12, -.4, .4);
+    tilt.rotation.z = THREE.MathUtils.clamp(-vx * .12, -.55, .55);
+    tilt.rotation.y += (THREE.MathUtils.clamp(vx * .08, -.5, .5) - tilt.rotation.y) * .1;
     rotors.forEach((r, i) => { r.rotation.y += (i % 2 ? -1 : 1) * .9; });
-
-    scale += ((pointer.inside ? 1 : 0) - scale) * .08;
-    drone.scale.setScalar(.8 * Math.max(.001, scale));
+    drone.scale.setScalar(.8 * scale);
     renderer.render(scene, camera);
   }
   requestAnimationFrame(tick);

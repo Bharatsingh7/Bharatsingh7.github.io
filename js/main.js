@@ -268,7 +268,7 @@
 
   let arts = [];
   function sizeArts() {
-    const dpr = Math.min(devicePixelRatio || 1, 2);
+    const dpr = Math.min(devicePixelRatio || 1, 1.5);
     arts.forEach(a => {
       const r = a.cv.getBoundingClientRect();
       a.w = r.width; a.h = r.height;

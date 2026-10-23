@@ -517,7 +517,7 @@ export function buildLaptop() {
     group,
     update(t, dt) {
       acc += dt;
-      if (acc < .12) return;
+      if (acc < .25) return;
       acc = 0; n++;
       data.shift();
       data.push(Math.max(.1, Math.min(.95, data[data.length - 1] + (Math.random() - .5) * .12 + Math.sin(n * .15) * .03)));
